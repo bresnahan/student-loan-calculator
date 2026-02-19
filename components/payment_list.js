@@ -72,6 +72,19 @@ const Tile = ({payment, versus, compare, expanded, ...rest}) => {
 
   const [first] = breakdown
   const last = breakdown[breakdown.length - 1]
+  const isRapPlan = label && label.includes('RAP')
+
+  useEffect(() => {
+    if (!isRapPlan) {
+      return
+    }
+
+    console.log('[RAP payment card]', {
+      label,
+      firstPayment: first.payment,
+      lastPayment: last.payment,
+    })
+  }, [isRapPlan, label, first.payment, last.payment])
 
   let vsFirst, vsLast, vsBreakdown
   if (versus) {
@@ -156,7 +169,7 @@ const Tile = ({payment, versus, compare, expanded, ...rest}) => {
                     b={first.payment}
                     className={className}
                   />
-                  {first.payment === last.payment
+                  {first.payment === last.payment || isRapPlan
                     ? currency(first.payment)
                     : `${currency(first.payment)} - ${currency(last.payment)}`}
                 </h5>
@@ -301,7 +314,8 @@ const PaymentList = ({payments}) => {
     payment: 'Monthly payment',
     endingBalance: 'Balance',
     totalPayment: 'Total payment',
-    totalInterest: 'Total interest'
+    totalInterest: 'Total interest',
+    totalGovernmentForgiveness: 'Government Forgiveness',
   }
 
   if (eligible.length === 0) {

@@ -1,3 +1,10 @@
+/**
+ *
+ * Student Loan Calculator
+ *
+ * Copyright (c) 2020-2026, The Institute of Student Loan Advisors
+ *
+ */
 export const States = {
   LOWER_48: 'LOWER_48',
   ALASKA: 'ALASKA',
@@ -8,6 +15,9 @@ export const MONTHS = 12
 
 // 0 index is the amount for each dependent over 8 persons
 // Based on: https://aspe.hhs.gov/poverty-guidelines
+// todo: convert this table construction to a method that uses
+// the APIs available from .gov:
+// https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines/poverty-guidelines-api
 const FEDERAL_POVERY_LEVEL = {
   LOWER_48: [4480, 12760, 17240, 21720, 26200, 30680, 35160, 39640, 44120],
   ALASKA: [5600, 15950, 21550, 27150, 32750, 38350, 43950, 49550, 55150],
@@ -114,6 +124,51 @@ export const getTotalIncome = (income) => {
 export const getDiscretionaryIncome = (income, year) =>
   Math.max(0, getTotalIncome(income) - getPovertyLevel(income, year) * 1.5)
 
+const getRapTotalIncome = (income) => {
+  const {agi, agi_spouse = 0, filing} = income
+
+  return filing === 'SINGLE' ? agi : agi + agi_spouse
+}
+
+const getRapDependentCount = (income) => {
+  const {dependents = 0, filing} = income
+  const filers = filing === 'SINGLE' ? 1 : 2
+
+  return Math.max(0, dependents - filers)
+}
+
+const getRapAnnualPayment = (agi) => {
+  if (agi <= 10000) {
+    return 120
+  }
+
+  const brackets = [
+    {max: 20000, rate: 0.01},
+    {max: 30000, rate: 0.02},
+    {max: 40000, rate: 0.03},
+    {max: 50000, rate: 0.04},
+    {max: 60000, rate: 0.05},
+    {max: 70000, rate: 0.06},
+    {max: 80000, rate: 0.07},
+    {max: 90000, rate: 0.08},
+    {max: 100000, rate: 0.09},
+    {max: Number.POSITIVE_INFINITY, rate: 0.1},
+  ]
+
+  const bracket = brackets.find(({max}) => agi <= max)
+
+  return agi * bracket.rate
+}
+
+const getRapMonthlyPayment = (income) => {
+  const agi = getRapTotalIncome(income)
+  const annualPayment = getRapAnnualPayment(agi)
+  const monthlyBase = annualPayment / MONTHS
+  const dependentReduction = getRapDependentCount(income) * 50
+
+  return Math.max(10, monthlyBase - dependentReduction)
+}
+
 export const partialFinancialHardship = (loan, income, rate = 0.15) => {
   const {payment} = fixedRateRepayment(loan, 10)
   const discrectionary = getDiscretionaryIncome(income)
@@ -214,6 +269,64 @@ export const incomeBasedRepayment = (
   )
 
   return {payment: breakdown.length ? breakdown[0].payment : 0, breakdown}
+}
+
+export const rapBasedRepayment = (loan, income, term = 30) => {
+  term = proRatedTerm(loan, term, true)
+  const {balance, rate} = loan
+  const payment = getRapMonthlyPayment(income)
+  const breakdown = []
+
+  for (let i = 0; i < term * MONTHS; i++) {
+    let last = breakdown[i - 1]
+    if (!last) {
+      last = {
+        balance,
+        payment,
+        endingBalance: balance,
+        totalInterest: 0,
+        totalPayment: 0,
+        totalGovernmentForgiveness: 0,
+      }
+    }
+
+    const interest = (last.endingBalance * rate) / MONTHS
+    const cappedPayment = Math.min(payment, last.endingBalance + interest)
+    const principalPaid = Math.max(0, cappedPayment - interest)
+    const interestForgiven = Math.max(0, interest - cappedPayment)
+    let principalSubsidy = Math.max(0, 50 - principalPaid)
+    let totalReduction = principalPaid + principalSubsidy
+
+    if (totalReduction > last.endingBalance) {
+      principalSubsidy = Math.max(0, last.endingBalance - principalPaid)
+      totalReduction = principalPaid + principalSubsidy
+    }
+
+    const endingBalance = last.endingBalance - totalReduction
+    const totalInterest = interest + last.totalInterest
+    const totalPayment = cappedPayment + last.totalPayment
+    const governmentForgiveness = interestForgiven + principalSubsidy
+    const totalGovernmentForgiveness =
+      governmentForgiveness + last.totalGovernmentForgiveness
+
+    breakdown.push({
+      balance: last.endingBalance,
+      payment: cappedPayment,
+      interest,
+      principle: totalReduction,
+      endingBalance,
+      totalInterest,
+      totalPayment,
+      governmentForgiveness,
+      totalGovernmentForgiveness,
+    })
+
+    if (endingBalance <= 0) {
+      break
+    }
+  }
+
+  return {payment, breakdown}
 }
 
 export const getIncomeBreakdown = (

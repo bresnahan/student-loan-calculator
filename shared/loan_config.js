@@ -1,3 +1,10 @@
+/**
+ *
+ * Student Loan Calculator
+ *
+ * Copyright (c) 2020-2026, The Institute of Student Loan Advisors
+ *
+ */
 import {
   MONTHS,
   fixedRateRepayment,
@@ -7,6 +14,7 @@ import {
   incomeBasedRepayment,
   partialFinancialHardship,
   payeBasedRepayment,
+  rapBasedRepayment,
 } from './calc'
 
 export const LoanTypes = {
@@ -42,6 +50,7 @@ export const LoanRepaymentTypes = {
   GRADUATED: 'Graduated',
   GRADUATED_EXTENDED: 'Graduated Extended',
   INCOME: 'Income Driven Plan',
+  RAP: 'Repayment Assistance Plan - RAP',
 }
 
 const Plans = {
@@ -54,6 +63,7 @@ const Plans = {
   PAY_AS_YOU_EARN: 'PAY_AS_YOU_EARN',
   REVISED_PAY_AS_YOU_EARN: 'REVISED_PAY_AS_YOU_EARN',
   INCOME_CONTINGENT_REPAY: 'INCOME_CONTINGENT_REPAY',
+  RAP: 'RAP',
 }
 
 export const RepaymentEligible = {
@@ -152,6 +162,14 @@ export const RepaymentEligible = {
       'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
       'DIRECT_PLUS_PRO',
     ].includes(loan.type),
+  RAP: (loan) =>
+    [
+      'DIRECT_SUBSIDIZED',
+      'DIRECT_UNSUBSIDIZED',
+      'DIRECT_CONSOLIDATED_SUBSIDIZED',
+      'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
+      'DIRECT_PLUS_PRO',
+    ].includes(loan.type),
 }
 
 export const RepaymentRequirements = {
@@ -160,6 +178,7 @@ export const RepaymentRequirements = {
   INCOME_CONTINGENT_REPAY: ['IDR'],
   PAY_AS_YOU_EARN: ['IDR', 'PFH'],
   REVISED_PAY_AS_YOU_EARN: ['IDR'],
+  RAP: ['IDR'],
 }
 
 export const isPlanEligible = (type, loan, income) =>
@@ -299,6 +318,24 @@ export const RepaymentPlans = {
       breakdown,
     }
   },
+  RAP: (loan, income) => {
+    const {payment, breakdown} = rapBasedRepayment(loan, income, 30)
+    const forgiven =
+      breakdown.length + loan.payments >= 30 * MONTHS
+        ? breakdown[breakdown.length - 1].balance
+        : 0
+
+    return {
+      label: 'Repayment Assistance Plan - RAP',
+      eligible: isPlanEligible(Plans.RAP, loan, income),
+      requirements: RepaymentRequirements[Plans.RAP],
+      description:
+        'You make monthly payments based on your adjusted gross income for up to 30 years. Any interest above your monthly payment is forgiven, and the government ensures your principal drops by at least $50 per month. Direct Loans only; Parent PLUS loans are not eligible, even if consolidated.',
+      forgiven,
+      payment,
+      breakdown,
+    }
+  },
 }
 
 export const getRepaymentOpions = (loan, income) =>
@@ -312,6 +349,7 @@ export const getRepaymentOpions = (loan, income) =>
     RepaymentPlans.PAY_AS_YOU_EARN(loan, income),
     RepaymentPlans.REVISED_PAY_AS_YOU_EARN(loan, income),
     RepaymentPlans.INCOME_CONTINGENT_REPAY(loan, income),
+    RepaymentPlans.RAP(loan, income),
   ].filter((r) => r.breakdown.length)
 
 export const consolidateLoans = (loans, income) => {

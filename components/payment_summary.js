@@ -1,3 +1,10 @@
+/**
+ *
+ * Student Loan Calculator
+ *
+ * Copyright (c) 2020-2026, The Institute of Student Loan Advisors
+ *
+ */
 import PropTypes from 'prop-types'
 import React from 'react'
 import {classNames, currency, simplifyCurrency} from '../shared/helpers'
@@ -17,6 +24,10 @@ const PaymentSummary = props => {
   } = props
   const [first] = breakdown
   const last = breakdown[breakdown.length - 1]
+  const paymentMin = Math.min(first.payment, last.payment)
+  const paymentMax = Math.max(first.payment, last.payment)
+  const isPaymentCappedLower = last.payment < first.payment
+  const isPaymentFlat = Math.abs(first.payment - last.payment) < 0.01
 
   return (
     <tr
@@ -32,7 +43,7 @@ const PaymentSummary = props => {
         <>
           <td>{Math.round(breakdown.length / 12)} years</td>
           <td className="text-right">
-            {first.payment === last.payment
+            {isPaymentFlat || isPaymentCappedLower
               ? currency(first.payment)
               : `${currency(first.payment)} - ${currency(last.payment)}`}
           </td>
@@ -92,8 +103,8 @@ const PaymentSummary = props => {
         }
 
         .payment .range {
-          left: ${(first.payment / range.max) * 100}%;
-          width: ${((last.payment - first.payment) / range.max) * 100}%;
+          left: ${(paymentMin / range.max) * 100}%;
+          width: ${((paymentMax - paymentMin) / range.max) * 100}%;
         }
 
         .compare .range {

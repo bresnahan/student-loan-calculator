@@ -75,6 +75,7 @@ const sortRepayments = (list, sort = {}) => {
         break
       case 'totalInterest':
       case 'totalPayment':
+      case 'totalGovernmentForgiveness':
         aVal = a.breakdown[a.breakdown.length - 1][key]
         bVal = b.breakdown[b.breakdown.length - 1][key]
         break
@@ -135,7 +136,8 @@ const PaymentTable = ({payments, selected, onSelect}) => {
   const compareItems = [
     {id: 'totalPayment', label: 'Total paid'},
     {id: 'totalInterest', label: 'Total interest'},
-    {id: 'forgiven', label: 'Forgiven'}
+    {id: 'forgiven', label: 'Forgiven'},
+    {id: 'totalGovernmentForgiveness', label: 'Government Forgiveness'}
   ]
 
   return (
@@ -186,7 +188,8 @@ const PaymentTable = ({payments, selected, onSelect}) => {
                       {
                         totalInterest: 'Total interest',
                         totalPayment: 'Total paid',
-                        forgiven: 'Forgiven'
+                        forgiven: 'Forgiven',
+                        totalGovernmentForgiveness: 'Government Forgiveness'
                       }[compare]
                     }{' '}
                     {caret}

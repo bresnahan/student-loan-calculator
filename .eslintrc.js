@@ -22,7 +22,12 @@ module.exports = {
     sourceType: 'module',
   },
   plugins: ['react'],
-  rules: {},
+  rules: {
+    '@next/next/no-img-element': 'off',
+    '@next/next/no-page-custom-font': 'off',
+    '@next/next/no-sync-scripts': 'off',
+    'react/no-unknown-property': 'off',
+  },
   settings: {
     react: {
       version: 'detect',

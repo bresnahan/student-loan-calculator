@@ -225,15 +225,15 @@ const Home = () => {
             </div>
             <div className="mt-4 small">
               <p>
-                <strong>Discretionary Income:</strong> Your discrectionary
-                income is your adjsuted gross income (typically what you declare
+                <strong>Discretionary Income:</strong> Your discretionary
+                income is your adjusted gross income (typically what you declare
                 in your income tax returns) minus 150% of the{' '}
                 <a
                   href="https://aspe.hhs.gov/poverty-guidelines"
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  Fedral Poverty Guideline
+                  Federal Poverty Guideline
                 </a>{' '}
                 for your family size.
               </p>
