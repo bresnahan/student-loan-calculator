@@ -197,10 +197,10 @@ const Home = () => {
                   <>
                     <p>
                       You can retrieve your loan information from the{' '}
-                      <strong>National Student Loan Data System</strong> or by
+                      <strong>Federal Student Aid website</strong> or by
                       contacting your loan holder.
                     </p>
-                    <Button href="https://nslds.ed.gov">Learn more</Button>
+                    <Button href="https://studentaid.gov/">Learn more</Button>
                   </>
                 )}
                 {isPrivateLoan &&

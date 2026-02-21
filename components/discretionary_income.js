@@ -62,9 +62,11 @@ const DiscretionaryIncome = props => {
             <Form.Group>
               <Form.Label>State</Form.Label>
               <Form.Control as="select" onChange={onChangeState} value={state}>
-                <option value={States.LOWER_48}>Lower 48</option>
-                <option value={States.ALASKA}>Alaska</option>
-                <option value={States.HAWAII}>Hawaii</option>
+                {Object.entries(States).map(([key, value]) => (
+                  <option key={key} value={key}>
+                    {value.replace(/_/g, ' ')}
+                  </option>
+                ))}
               </Form.Control>
             </Form.Group>
           </Col>

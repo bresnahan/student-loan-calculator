@@ -1,10 +1,18 @@
+/**
+ *
+ * Student Loan Calculator
+ *
+ * Copyright (c) 2020-2026, The Institute of Student Loan Advisors
+ *
+ */
+
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
 import PropTypes from 'prop-types'
 import React, {useEffect} from 'react'
 import Select from './select'
-import {States} from '../shared/calc'
+import {CommunityPropertyStates, States} from '../shared/calc'
 import {TaxFilingStatus} from '../shared/loan_config'
 
 import {
@@ -37,6 +45,7 @@ const IncomeForm = ({onChange, income, ...props}) => {
   }, [onChange, agi.deferred, agiSpouse.deferred, dependents, state, filing])
 
   const isSingle = filing === 'SINGLE'
+  const isCommunityProperty = Boolean(CommunityPropertyStates[state])
 
   return (
     <Form {...props}>
@@ -71,9 +80,18 @@ const IncomeForm = ({onChange, income, ...props}) => {
           <Form.Group>
             <Form.Label>State</Form.Label>
             <Select onChange={onChangeState} value={state}>
-              <option value={States.LOWER_48}>Lower 48</option>
-              <option value={States.ALASKA}>Alaska</option>
-              <option value={States.HAWAII}>Hawaii</option>
+              {Object.entries(States).map(([key, value]) => {
+                const label = value.replace(/_/g, ' ')
+                const suffix = CommunityPropertyStates[key]
+                  ? ' (Community Property state)'
+                  : ''
+
+                return (
+                  <option key={key} value={key}>
+                    {label + suffix}
+                  </option>
+                )
+              })}
             </Select>
           </Form.Group>
         </Col>
@@ -120,6 +138,9 @@ const IncomeForm = ({onChange, income, ...props}) => {
             <Form.Text muted>
               Certain repayment plans include spousal income when calculating
               monthly payments, even if filing separately.
+              {filing === 'MARRIED_SEPARATE' && isCommunityProperty
+                ? ' In Community Property states, income is 1/2 of combined income if Married Filing Separately.'
+                : ''}
             </Form.Text>
           </Col>
         )}

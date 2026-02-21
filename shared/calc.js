@@ -6,9 +6,68 @@
  *
  */
 export const States = {
-  LOWER_48: 'LOWER_48',
+  ALABAMA: 'ALABAMA',
   ALASKA: 'ALASKA',
+  ARIZONA: 'ARIZONA',
+  ARKANSAS: 'ARKANSAS',
+  CALIFORNIA: 'CALIFORNIA',
+  COLORADO: 'COLORADO',
+  CONNECTICUT: 'CONNECTICUT',
+  DELAWARE: 'DELAWARE',
+  FLORIDA: 'FLORIDA',
+  GEORGIA: 'GEORGIA',
   HAWAII: 'HAWAII',
+  IDAHO: 'IDAHO',
+  ILLINOIS: 'ILLINOIS',
+  INDIANA: 'INDIANA',
+  IOWA: 'IOWA',
+  KANSAS: 'KANSAS',
+  KENTUCKY: 'KENTUCKY',
+  LOUISIANA: 'LOUISIANA',
+  MAINE: 'MAINE',
+  MARYLAND: 'MARYLAND',
+  MASSACHUSETTS: 'MASSACHUSETTS',
+  MICHIGAN: 'MICHIGAN',
+  MINNESOTA: 'MINNESOTA',
+  MISSISSIPPI: 'MISSISSIPPI',
+  MISSOURI: 'MISSOURI',
+  MONTANA: 'MONTANA',
+  NEBRASKA: 'NEBRASKA',
+  NEVADA: 'NEVADA',
+  NEW_HAMPSHIRE: 'NEW_HAMPSHIRE',
+  NEW_JERSEY: 'NEW_JERSEY',
+  NEW_MEXICO: 'NEW_MEXICO',
+  NEW_YORK: 'NEW_YORK',
+  NORTH_CAROLINA: 'NORTH_CAROLINA',
+  NORTH_DAKOTA: 'NORTH_DAKOTA',
+  OHIO: 'OHIO',
+  OKLAHOMA: 'OKLAHOMA',
+  OREGON: 'OREGON',
+  PENNSYLVANIA: 'PENNSYLVANIA',
+  RHODE_ISLAND: 'RHODE_ISLAND',
+  SOUTH_CAROLINA: 'SOUTH_CAROLINA',
+  SOUTH_DAKOTA: 'SOUTH_DAKOTA',
+  TENNESSEE: 'TENNESSEE',
+  TEXAS: 'TEXAS',
+  UTAH: 'UTAH',
+  VERMONT: 'VERMONT',
+  VIRGINIA: 'VIRGINIA',
+  WASHINGTON: 'WASHINGTON',
+  WEST_VIRGINIA: 'WEST_VIRGINIA',
+  WISCONSIN: 'WISCONSIN',
+  WYOMING: 'WYOMING',
+}
+
+export const CommunityPropertyStates = {
+  ARIZONA: 'ARIZONA',
+  CALIFORNIA: 'CALIFORNIA',
+  IDAHO: 'IDAHO',
+  LOUISIANA: 'LOUISIANA',
+  NEVADA: 'NEVADA',
+  NEW_MEXICO: 'NEW_MEXICO',
+  TEXAS: 'TEXAS',
+  WASHINGTON: 'WASHINGTON',
+  WISCONSIN: 'WISCONSIN',
 }
 
 export const MONTHS = 12
@@ -100,7 +159,17 @@ export const getIncomePercentageFactor = (income, year = 0) => {
 
 export const getPovertyLevel = (income, year = 0) => {
   const {dependents, state, rates} = income
-  const fpl = FEDERAL_POVERY_LEVEL[state]
+  let fpl
+  switch (state) {
+    case States.ALASKA:
+      fpl = FEDERAL_POVERY_LEVEL.ALASKA
+      break
+    case States.HAWAII:
+      fpl = FEDERAL_POVERY_LEVEL.HAWAII
+      break
+    default:
+      fpl = FEDERAL_POVERY_LEVEL.LOWER_48
+  }
 
   const level =
     dependents < 9 ? fpl[dependents] : fpl[8] + fpl[0] * (dependents - 8)
@@ -108,13 +177,21 @@ export const getPovertyLevel = (income, year = 0) => {
   return level * Math.pow(1 + rates.inflation, year)
 }
 
+/*
+ * If filing as "Married Filing Separately" in a Community Property
+ * state, the income used is 1/2 of the applicant plus 1/2 of the 
+ * spouse. 
+ */ 
 export const getTotalIncome = (income) => {
-  const {agi, agi_spouse = 0, filing} = income
+  const {agi, agi_spouse = 0, filing, state} = income
 
   switch (filing) {
     case 'MARRIED_JOINT':
       return agi + agi_spouse
     case 'MARRIED_SEPARATE':
+      return CommunityPropertyStates[state]
+        ? (agi + agi_spouse) / 2
+        : agi
     case 'SINGLE':
     default:
       return agi
@@ -123,12 +200,6 @@ export const getTotalIncome = (income) => {
 
 export const getDiscretionaryIncome = (income, year) =>
   Math.max(0, getTotalIncome(income) - getPovertyLevel(income, year) * 1.5)
-
-const getRapTotalIncome = (income) => {
-  const {agi, agi_spouse = 0, filing} = income
-
-  return filing === 'SINGLE' ? agi : agi + agi_spouse
-}
 
 const getRapDependentCount = (income) => {
   const {dependents = 0, filing} = income
@@ -161,7 +232,7 @@ const getRapAnnualPayment = (agi) => {
 }
 
 const getRapMonthlyPayment = (income) => {
-  const agi = getRapTotalIncome(income)
+  const agi = getTotalIncome(income)
   const annualPayment = getRapAnnualPayment(agi)
   const monthlyBase = annualPayment / MONTHS
   const dependentReduction = getRapDependentCount(income) * 50
