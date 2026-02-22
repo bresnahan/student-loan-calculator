@@ -15,6 +15,7 @@ import {
   partialFinancialHardship,
   payeBasedRepayment,
   rapBasedRepayment,
+  standardTieredRepayment,
 } from './calc'
 
 export const LoanTypes = {
@@ -49,6 +50,7 @@ export const LoanRepaymentTypes = {
   FIXED_EXTENDED: 'Fixed Extended',
   GRADUATED: 'Graduated',
   GRADUATED_EXTENDED: 'Graduated Extended',
+  STANDARD_TIERED: 'Standard Tiered',
   INCOME: 'Income Driven Plan',
   RAP: 'Repayment Assistance Plan - RAP',
 }
@@ -58,6 +60,7 @@ const Plans = {
   FIXED_EXTENDED: 'FIXED_EXTENDED',
   GRADUATED: 'GRADUATED',
   GRADUATED_EXTENDED: 'GRADUATED_EXTENDED',
+  STANDARD_TIERED: 'STANDARD_TIERED',
   INCOME_BASED_REPAY: 'INCOME_BASED_REPAY',
   INCOME_BASED_REPAY_NEW: 'INCOME_BASED_REPAY_NEW',
   PAY_AS_YOU_EARN: 'PAY_AS_YOU_EARN',
@@ -68,6 +71,7 @@ const Plans = {
 
 export const RepaymentEligible = {
   STANDARD_FIXED: () => true,
+  STANDARD_TIERED: () => true,
   FIXED_EXTENDED: (loan) =>
     loan.balance > 30000 &&
     [
@@ -194,6 +198,13 @@ export const RepaymentPlans = {
     description:
       'You pay a fixed amount each month of at least $50 for up to 10 years.',
     ...fixedRateRepayment(loan, getLoanTerm(loan)),
+  }),
+  STANDARD_TIERED: (loan) => ({
+    label: 'Standard Tiered',
+    eligible: isPlanEligible(Plans.STANDARD_TIERED, loan),
+    description:
+      'Standard Tiered Repayment Plan for federal student loans consolidates current standard, graduated, and extended plans into a single, tiered system. It is available as of July 1, 2026. The length of the repayment term depends on the total amount borrowed, with higher debt resulting in longer repayment terms: Less than $25,000: 10-year term. $25,000 to less than $50,000: 15-year. $50,000 to less than $100,000: 20-year. $100,000 or more: 25-year.',
+    ...standardTieredRepayment(loan),
   }),
   FIXED_EXTENDED: (loan) => ({
     label: 'Fixed Extended',
@@ -341,6 +352,7 @@ export const RepaymentPlans = {
 export const getRepaymentOpions = (loan, income) =>
   [
     RepaymentPlans.STANDARD_FIXED(loan),
+    RepaymentPlans.STANDARD_TIERED(loan),
     RepaymentPlans.GRADUATED(loan),
     RepaymentPlans.FIXED_EXTENDED(loan),
     RepaymentPlans.GRADUATED_EXTENDED(loan),

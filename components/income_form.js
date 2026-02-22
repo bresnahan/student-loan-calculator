@@ -15,11 +15,7 @@ import Select from './select'
 import {CommunityPropertyStates, States} from '../shared/calc'
 import {TaxFilingStatus} from '../shared/loan_config'
 
-import {
-  asInt,
-  useDeferredOnChange,
-  useOnChange,
-} from '@standardlabs/react-hooks'
+import {asInt, useDeferredOnChange, useOnChange} from '@standardlabs/react-hooks'
 
 const IncomeForm = ({onChange, income, ...props}) => {
   const [agi, onChangeAgi] = useDeferredOnChange(income.agi, 150, asInt)

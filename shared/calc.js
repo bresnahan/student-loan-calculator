@@ -248,6 +248,9 @@ export const partialFinancialHardship = (loan, income, rate = 0.15) => {
 }
 
 export const proRatedTerm = (loan, term, idr = false) => {
+  const paymentsMade = Number(loan.payments) || 0
+  const remainingMonths = Math.max(term * MONTHS - paymentsMade, 0)
+
   return idr &&
     [
       'GRADUATED',
@@ -256,7 +259,7 @@ export const proRatedTerm = (loan, term, idr = false) => {
       'STANDARD_CONSOLIDATED',
     ].includes(loan.plan)
     ? term
-    : (term * MONTHS - loan.payments) / MONTHS
+    : remainingMonths / MONTHS
 }
 
 // Interested is subsidized for first 3 years of subsidized loans
@@ -297,6 +300,20 @@ export const getLoanTerm = (loan) => {
   }
 }
 
+export const getStandardTieredTerm = (loan) => {
+  const {balance} = loan
+
+  if (balance < 25000) {
+    return 10
+  } else if (balance < 50000) {
+    return 15
+  } else if (balance < 100000) {
+    return 20
+  }
+
+  return 25
+}
+
 // TODO(wes): Inforce minimum payments
 export const fixedRateRepayment = (loan, term = 10) => {
   term = proRatedTerm(loan, term)
@@ -305,6 +322,12 @@ export const fixedRateRepayment = (loan, term = 10) => {
   const breakdown = getFixedBreakdown(payment, balance, rate, term)
 
   return {payment, breakdown}
+}
+
+export const standardTieredRepayment = (loan) => {
+  const term = getStandardTieredTerm(loan)
+
+  return fixedRateRepayment(loan, term)
 }
 
 export const graduatedRepayment = (loan, term = 10) => {

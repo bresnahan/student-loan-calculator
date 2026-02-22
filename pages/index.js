@@ -58,7 +58,7 @@ const Home = () => {
     agi: 30000,
     agi_spouse: 25000,
     dependents: 1,
-    state: States.LOWER_48,
+    state: States.ALABAMA,
     filing: 'SINGLE',
     rates: {income: 0.025, inflation: 0.0236},
   })
