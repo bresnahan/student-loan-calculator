@@ -37,6 +37,7 @@ const Share = ({loans, income}) => {
                 value={`${location.origin}/?c=${btoa(
                   JSON.stringify({loans, income})
                 )}`}
+                readOnly
               />
               <InputGroup.Append>
                 <Button onClick={onCopy} variant="secondary" ref={copyRef}>

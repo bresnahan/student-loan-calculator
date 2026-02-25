@@ -72,52 +72,127 @@ export const CommunityPropertyStates = {
 
 export const MONTHS = 12
 
-// 0 index is the amount for each dependent over 8 persons
-// Based on: https://aspe.hhs.gov/poverty-guidelines
-// todo: convert this table construction to a method that uses
-// the APIs available from .gov:
-// https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines/poverty-guidelines-api
-const FEDERAL_POVERY_LEVEL = {
-  LOWER_48: [4480, 12760, 17240, 21720, 26200, 30680, 35160, 39640, 44120],
-  ALASKA: [5600, 15950, 21550, 27150, 32750, 38350, 43950, 49550, 55150],
-  HAWAII: [5150, 14680, 19830, 24980, 30130, 35280, 40430, 45580, 50730],
+const POVERTY_GUIDELINE_DEBUG = true
+const POVERTY_API_BASE =
+  'https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines/api'
+
+const povertyDebug = (...args) => {
+  if (POVERTY_GUIDELINE_DEBUG) {
+    console.log('[Poverty Guidelines]', ...args)
+  }
 }
 
-// https://s3.amazonaws.com/public-inspection.federalregister.gov/2020-11818.pdf
+const buildPovertyTable = (sizes) => {
+  const increment = sizes[7] - sizes[6]
+
+  return [increment, ...sizes]
+}
+
+// 0 index is the amount for each dependent over 8 persons
+// Based on: https://aspe.hhs.gov/poverty-guidelines
+let FEDERAL_POVERTY_LEVEL = {
+  LOWER_48: [5680, 15960, 21640, 27320, 33000, 38680, 44360, 50040, 55720],
+  ALASKA: [7100, 19950, 27050, 34150, 41250, 48350, 55450, 62550, 69650],
+  HAWAII: [6530, 18360, 24890, 31420, 37950, 44480, 51010, 57540, 64070],
+}
+
+const parsePovertyIncome = (data) => {
+  const value = Number(data?.income ?? data?.poverty_threshold)
+
+  if (!Number.isFinite(value)) {
+    throw new Error('Invalid poverty guideline response')
+  }
+
+  return value
+}
+
+const fetchPovertyGuidelines = async (year, stateCode) => {
+  const sizes = await Promise.all(
+    Array.from({length: 8}, (_, index) => index + 1).map(async (size) => {
+      const response = await fetch(`${POVERTY_API_BASE}/${year}/${stateCode}/${size}`)
+
+      if (!response.ok) {
+        throw new Error(`Poverty guideline API request failed (${response.status})`)
+      }
+
+      const payload = await response.json()
+
+      return parsePovertyIncome(payload?.data)
+    })
+  )
+
+  return buildPovertyTable(sizes)
+}
+
+export const refreshPovertyGuidelines = async () => {
+  const year = new Date().getFullYear()
+
+  povertyDebug('Poverty guideline year', year)
+
+  try {
+    const [lower48, alaska, hawaii] = await Promise.all([
+      fetchPovertyGuidelines(year, 'us'),
+      fetchPovertyGuidelines(year, 'ak'),
+      fetchPovertyGuidelines(year, 'hi'),
+    ])
+
+    FEDERAL_POVERTY_LEVEL = {
+      LOWER_48: lower48,
+      ALASKA: alaska,
+      HAWAII: hawaii,
+    }
+
+    povertyDebug('Poverty guideline API accessible', true)
+    povertyDebug('Lower 48 poverty table', lower48)
+    povertyDebug('Alaska poverty table', alaska)
+    povertyDebug('Hawaii poverty table', hawaii)
+  } catch (error) {
+    console.log('[Poverty Guidelines] API error', error)
+    povertyDebug('Poverty guideline API accessible', false, error)
+    povertyDebug('Lower 48 poverty table', FEDERAL_POVERTY_LEVEL.LOWER_48)
+    povertyDebug('Alaska poverty table', FEDERAL_POVERTY_LEVEL.ALASKA)
+    povertyDebug('Hawaii poverty table', FEDERAL_POVERTY_LEVEL.HAWAII)
+  }
+}
+
+// Locations of releavant data:
+// 2020: https://s3.amazonaws.com/public-inspection.federalregister.gov/2020-11818.pdf
+// 2025: https://www.federalregister.gov/documents/2025/08/05/2025-14806/annual-updates-to-the-income-contingent-repayment-icr-plan-formula-for-2025-william-d-ford-federal
+// the values in the table below are for year: 2025
 const INCOME_PERCENTAGE_FACTOR = (year, inflation) => {
   inflation = Math.pow(1 + inflation, year)
 
   const factors = {
     single: [
-      {income: 12392, factor: 0.55},
-      {income: 17051, factor: 0.5779},
-      {income: 21940, factor: 0.6057},
-      {income: 26940, factor: 0.6623},
-      {income: 31715, factor: 0.7189},
-      {income: 37736, factor: 0.8033},
-      {income: 47398, factor: 0.8877},
-      {income: 59445, factor: 1.0},
-      {income: 71496, factor: 1.0},
-      {income: 85929, factor: 1.118},
-      {income: 110029, factor: 1.235},
-      {income: 115839, factor: 1.412},
-      {income: 178683, factor: 1.5},
-      {income: 318265, factor: 2.0},
+      {income: 13722, factor: 0.55},
+      {income: 18881, factor: 0.5779},
+      {income: 24295, factor: 0.6057},
+      {income: 29831, factor: 0.6623},
+      {income: 35118, factor: 0.7189},
+      {income: 41786, factor: 0.8033},
+      {income: 52483, factor: 0.8877},
+      {income: 65824, factor: 1.0},
+      {income: 79170, factor: 1.0},
+      {income: 95150, factor: 1.118},
+      {income: 121836, factor: 1.235},
+      {income: 172561, factor: 1.412},
+      {income: 197858, factor: 1.5},
+      {income: 352418, factor: 2.0},
     ],
     married: [
-      {income: 12392, factor: 0.5052},
-      {income: 19552, factor: 0.5668},
-      {income: 23300, factor: 0.5956},
-      {income: 30461, factor: 0.6779},
-      {income: 37736, factor: 0.7522},
-      {income: 47398, factor: 0.8761},
-      {income: 59444, factor: 1.0},
-      {income: 71496, factor: 1.0},
-      {income: 89573, factor: 1.094},
-      {income: 119691, factor: 1.25},
-      {income: 161860, factor: 1.406},
-      {income: 226369, factor: 1.5},
-      {income: 369903, factor: 2.0},
+      {income: 13722, factor: 0.5052},
+      {income: 21650, factor: 0.5668},
+      {income: 25800, factor: 0.5956},
+      {income: 33730, factor: 0.6779},
+      {income: 41786, factor: 0.7522},
+      {income: 52483, factor: 0.8761},
+      {income: 65823, factor: 1.0},
+      {income: 79170, factor: 1.0},
+      {income: 99186, factor: 1.094},
+      {income: 132534, factor: 1.25},
+      {income: 179230, factor: 1.406},
+      {income: 250660, factor: 1.5},
+      {income: 409597, factor: 2.0},
     ],
   }
 
@@ -162,13 +237,13 @@ export const getPovertyLevel = (income, year = 0) => {
   let fpl
   switch (state) {
     case States.ALASKA:
-      fpl = FEDERAL_POVERY_LEVEL.ALASKA
+      fpl = FEDERAL_POVERTY_LEVEL.ALASKA
       break
     case States.HAWAII:
-      fpl = FEDERAL_POVERY_LEVEL.HAWAII
+      fpl = FEDERAL_POVERTY_LEVEL.HAWAII
       break
     default:
-      fpl = FEDERAL_POVERY_LEVEL.LOWER_48
+      fpl = FEDERAL_POVERTY_LEVEL.LOWER_48
   }
 
   const level =
@@ -183,18 +258,22 @@ export const getPovertyLevel = (income, year = 0) => {
  * spouse. 
  */ 
 export const getTotalIncome = (income) => {
-  const {agi, agi_spouse = 0, filing, state} = income
+  const {agi = 0, agi_spouse = 0, filing, state} = income
+  const normalizedAgi = Number.isFinite(Number(agi)) ? Number(agi) : 0
+  const normalizedSpouseAgi = Number.isFinite(Number(agi_spouse))
+    ? Number(agi_spouse)
+    : 0
 
   switch (filing) {
     case 'MARRIED_JOINT':
-      return agi + agi_spouse
+      return normalizedAgi + normalizedSpouseAgi
     case 'MARRIED_SEPARATE':
       return CommunityPropertyStates[state]
-        ? (agi + agi_spouse) / 2
-        : agi
+        ? (normalizedAgi + normalizedSpouseAgi) / 2
+        : normalizedAgi
     case 'SINGLE':
     default:
-      return agi
+      return normalizedAgi
   }
 }
 

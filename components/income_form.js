@@ -119,7 +119,7 @@ const IncomeForm = ({onChange, income, ...props}) => {
                 <InputGroup.Text>$</InputGroup.Text>
               </InputGroup.Prepend>
               <Form.Control
-                value={agiSpouse.value || ''}
+                value={agiSpouse.value ?? ''}
                 type="number"
                 min={1000}
                 step={5000}

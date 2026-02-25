@@ -33,7 +33,7 @@ import {
   LoanTypes,
 } from '../shared/loan_config'
 import {useRouteConfig} from '../shared/hooks'
-import {States} from '../shared/calc'
+import {refreshPovertyGuidelines, States} from '../shared/calc'
 
 // Colors: https://blog.graphiq.com/finding-the-right-color-palettes-for-data-visualizations-fcd4e707a283
 const Colors = [
@@ -63,6 +63,10 @@ const Home = () => {
     rates: {income: 0.025, inflation: 0.0236},
   })
   const onRatesChange = useCallback((rates) => setIncome({rates}), [setIncome])
+
+  useEffect(() => {
+    refreshPovertyGuidelines()
+  }, [])
 
   const [loans, setLoans] = useState([
     {

@@ -34,7 +34,7 @@ const Settings = ({onChange, rates, ...props}) => {
             <InputGroup>
               <Form.Control
                 type="number"
-                min={1}
+                min={0}
                 step={0.1}
                 value={formatFloat(incomeGrowth.value)}
                 onChange={setIncomeGrowth}
@@ -51,7 +51,7 @@ const Settings = ({onChange, rates, ...props}) => {
             <InputGroup>
               <Form.Control
                 type="number"
-                min={1}
+                min={0}
                 step={0.01}
                 value={formatFloat(inflationRate.value)}
                 onChange={setInflationRate}
