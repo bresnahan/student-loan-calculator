@@ -29,7 +29,7 @@ const WrenchImg = props => (
 import css from 'styled-jsx/css'
 import {
   consolidateLoans,
-  getRepaymentOpions,
+  getRepaymentOptions,
   LoanTypes,
 } from '../shared/loan_config'
 import {useRouteConfig} from '../shared/hooks'
@@ -64,6 +64,11 @@ const Home = () => {
   })
   const onRatesChange = useCallback((rates) => setIncome({rates}), [setIncome])
 
+  const [policy, setPolicy] = useState({
+    bBorrowAfter070126: false,
+    bPSLF: false,
+  })
+
   useEffect(() => {
     refreshPovertyGuidelines()
   }, [])
@@ -96,7 +101,18 @@ const Home = () => {
   const isPrivateLoan = loan.type === 'PRIVATE'
   const isEligble = !(isUnkownLoan || isPrivateLoan)
 
-  const repayments = getRepaymentOpions(loan, income).map((r, i) => ({
+  const hasParentPlusHistory = loans.some((loanItem) =>
+    [
+      'FFEL_PARENTS',
+      'DIRECT_PLUS_PARENTS',
+      'DIRECT_PLUS_CONSOLIDATED',
+    ].includes(loanItem.type)
+  )
+
+  const repayments = getRepaymentOptions(loan, income, {
+    ...policy,
+    hasParentPlusHistory,
+  }).map((r, i) => ({
     ...r,
     color: Colors[i],
   }))
@@ -105,7 +121,14 @@ const Home = () => {
     repayments.slice(0, 2).map((r) => r.label)
   )
 
-  useRouteConfig((config) => setIncome(config.income))
+  useRouteConfig((config) => {
+    if (config.income) {
+      setIncome(config.income)
+    }
+    if (config.policy) {
+      setPolicy((prev) => ({...prev, ...config.policy}))
+    }
+  })
 
   const {className, styles} = css.resolve`
     .nav-item {
@@ -173,14 +196,21 @@ const Home = () => {
                     <IncomeForm income={income} onChange={setIncome} />
                   </div>
                 ) : nav === 'loan' ? (
-                  <LoanList loans={loans} income={income} onChange={setLoans} />
+                  <LoanList
+                    loans={loans}
+                    income={income}
+                    onChange={setLoans}
+                    bBorrowAfter070126={policy.bBorrowAfter070126}
+                    bPSLF={policy.bPSLF}
+                    onPolicyChange={setPolicy}
+                  />
                 ) : nav === 'settings' ? (
                   <div className="shadow border rounded px-3 pt-3 pb-1 mb-4">
                     <Settings rates={income.rates} onChange={onRatesChange} />
                   </div>
                 ) : (
                   <div className="shadow border rounded px-3 pt-3 pb-1 mb-4">
-                    <Share loans={loans} income={income} />
+                    <Share loans={loans} income={income} policy={policy} />
                   </div>
                 )}
               </div>

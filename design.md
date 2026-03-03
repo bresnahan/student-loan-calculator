@@ -24,6 +24,23 @@ Poverty guideline data was updated to 2026 values and renamed for clarity. The c
 ## 5. ICR Income Percentage Updates
 The ICR income percentage factor table was updated to the 2025 Federal Register values. The calculator uses these updated income-factor pairs to compute the ICR payment percentage based on borrower income and filing status.
 
+## Old Plan Phaseouts
+We need a checkbox under the "x Loans Total" panel.  the checkbox will say:
+"Did you borrow or consolidate on or after July 1, 2026?"
+internal variable will be bBorrowAfter070126.  Defaults to no.  yes or no are the only answers.  Apply the current loan repayment plan availability logic based on their current loan types and then add these rules: If they say "yes", only provide output for the RAP and Standard Tiered plan.  If they have any Parent Plus loan history at all and choose yes, only provide output for the Standard Tiered plan.
+
+## Public Service Loan Forgiveness (PSLF)
+We need another checkbox under the "x Loans Total" panel.  the checkbox will say:
+"Are you pursuing Public Service Loan Forgiveness (PSLF)?".   Default to no, not checked.  internal variable bPSLF.
+If the user checks this box, then the loan is forgiven after N payments. Specifically for the following loan types:
+    Income Based Repay - IBR.  300 payments.
+    New IBR. 240 payments.
+    PAYE.  240 payments.
+    ICR. 300 payments.
+    RAP.  360 payments.
+
+Therefore the code needs to factor this into the computed repayment table and graph per loan type.
+
 ## 6. Tests
 - Validate RAP calculations against known cases where income changes mid-plan and prior payments shorten the term.
 - Verify Standard Tiered term selection for representative balances across all tiers.
@@ -37,9 +54,19 @@ Example 1.
 Kesha is single with no dependents and has $15,000 in Direct Loans that are eligible for repayment under the ICR plan. The interest rate on Kesha's loans is 6 percent, and she has an AGI of $35,118.
 
 Expected montly payment: $105.23
+Result: Confirmed 3/2/36.
 
 http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjE1MDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjM1MTE4LCJhZ2lfc3BvdXNlIjoyNTAwMCwiZGVwZW5kZW50cyI6MSwic3RhdGUiOiJBTEFCQU1BIiwiZmlsaW5nIjoiU0lOR0xFIiwicmF0ZXMiOnsiaW5jb21lIjowLjAyNSwiaW5mbGF0aW9uIjowLjAyMzZ9fX0=
 
+Student Aid Calculator: 
+    confirmed ICR payment is $105, ours is $105.
+    confirmed Standard pmt is $167, ours is $167.
+    note: Tiered Standard is not in the gov Student Aid calculator.
+    confirmed Graduated is $95 to $286, ours same. 
+    our PAYE starts at $93, theirs $97. 
+    our IBR is for 11 years, $140 - $167.  theirs is $97-$167 to 2041, 15 years.
+       also note the old TISLA calc says IBR is not an option?
+    
 ### Test case, ICR2: From Federal Register for ICR repayment.
 Example 2.
 
@@ -79,11 +106,24 @@ expected MPA: $250
 Test result: $200 for 30 years, $72K total, $37,845 of forgiveness.
 
 ### Test case, Old IBR1: Betsy
+$60K-$31,725 (150% of poverty level for family size of two) = $28,275
+
+$28, 275 x 15% = $4241.25/12 = 353.43 monthly payment amount (MPA)
+
+Result: payment range: $344 - $646 over 25 years.
+
+http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjg1MDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjYwMDAwLCJhZ2lfc3BvdXNlIjoyNTAwMCwiZGVwZW5kZW50cyI6Miwic3RhdGUiOiJBTEFCQU1BIiwiZmlsaW5nIjoiU0lOR0xFIiwicmF0ZXMiOnsiaW5jb21lIjowLjAyNSwiaW5mbGF0aW9uIjowLjAyMzZ9fSwicG9saWN5Ijp7ImJCb3Jyb3dBZnRlcjA3MDEyNiI6ZmFsc2UsImJQU0xGIjpmYWxzZX19
 
 ### Test case, New IBR1 and PAYE: Betsy
+$60K-$31,725 (150% of poverty level for family size of two) = $28,275
+
+$28, 275 x 15% = $2827.50/12 = 235.62 monthly payment amount (MPA)
+
+result: $230 - $378 over 20 years.
+http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjg1MDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjYwMDAwLCJhZ2lfc3BvdXNlIjoyNTAwMCwiZGVwZW5kZW50cyI6Miwic3RhdGUiOiJBTEFCQU1BIiwiZmlsaW5nIjoiU0lOR0xFIiwicmF0ZXMiOnsiaW5jb21lIjowLjAyNSwiaW5mbGF0aW9uIjowLjAyMzZ9fSwicG9saWN5Ijp7ImJCb3Jyb3dBZnRlcjA3MDEyNiI6ZmFsc2UsImJQU0xGIjpmYWxzZX19
 
 
 
-Dept of Ed Calc result: 
+Dept of Ed Calc result: See above
 
 

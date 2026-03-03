@@ -7,7 +7,7 @@ import PropTypes from 'prop-types'
 import React, {useCallback, useRef, useState} from 'react'
 import Tooltip from 'react-bootstrap/Tooltip'
 
-const Share = ({loans, income}) => {
+const Share = ({loans, income, policy}) => {
   const [showCopied, setShowCopied] = useState(false)
   const copyRef = useRef(null)
   const linkRef = useRef(null)
@@ -35,7 +35,7 @@ const Share = ({loans, income}) => {
                 ref={linkRef}
                 type="text"
                 value={`${location.origin}/?c=${btoa(
-                  JSON.stringify({loans, income})
+                  JSON.stringify({loans, income, policy})
                 )}`}
                 readOnly
               />
@@ -64,7 +64,8 @@ const Share = ({loans, income}) => {
 
 Share.propTypes = {
   loans: PropTypes.array,
-  income: PropTypes.object
+  income: PropTypes.object,
+  policy: PropTypes.object,
 }
 
 export default Share

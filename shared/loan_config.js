@@ -185,6 +185,41 @@ export const RepaymentRequirements = {
   RAP: ['IDR'],
 }
 
+const PSLF_TERMS = {
+  STANDARD_FIXED: 120,
+  INCOME_BASED_REPAY: 120,
+  INCOME_BASED_REPAY_NEW: 120,
+  PAY_AS_YOU_EARN: 120,
+  REVISED_PAY_AS_YOU_EARN: 120,
+  INCOME_CONTINGENT_REPAY: 120,
+  RAP: 120,
+}
+
+const applyPslf = (repayment, months) => {
+  if (!months || !repayment.breakdown.length) {
+    return repayment
+  }
+
+  const breakdown =
+    repayment.breakdown.length > months
+      ? repayment.breakdown.slice(0, months)
+      : repayment.breakdown
+  const last = breakdown[breakdown.length - 1]
+  const forgivenBalance = last?.endingBalance ?? 0
+  const forgiven = (repayment.forgiven || 0) + forgivenBalance
+
+  if (last) {
+    last.totalGovernmentForgiveness =
+      (last.totalGovernmentForgiveness || 0) + forgivenBalance
+  }
+
+  return {
+    ...repayment,
+    breakdown,
+    forgiven,
+  }
+}
+
 export const isPlanEligible = (type, loan, income) =>
   RepaymentEligible[type](loan, income)
 
@@ -349,20 +384,63 @@ export const RepaymentPlans = {
   },
 }
 
-export const getRepaymentOpions = (loan, income) =>
-  [
-    RepaymentPlans.STANDARD_FIXED(loan),
-    RepaymentPlans.STANDARD_TIERED(loan),
-    RepaymentPlans.GRADUATED(loan),
-    RepaymentPlans.FIXED_EXTENDED(loan),
-    RepaymentPlans.GRADUATED_EXTENDED(loan),
-    RepaymentPlans.INCOME_BASED_REPAY(loan, income),
-    RepaymentPlans.INCOME_BASED_REPAY_NEW(loan, income),
-    RepaymentPlans.PAY_AS_YOU_EARN(loan, income),
-    RepaymentPlans.REVISED_PAY_AS_YOU_EARN(loan, income),
-    RepaymentPlans.INCOME_CONTINGENT_REPAY(loan, income),
-    RepaymentPlans.RAP(loan, income),
-  ].filter((r) => r.breakdown.length)
+export const getRepaymentOptions = (
+  loan,
+  income,
+  {bBorrowAfter070126, bPSLF, hasParentPlusHistory} = {}
+) => {
+  let repayments = [
+    {plan: Plans.STANDARD_FIXED, data: RepaymentPlans.STANDARD_FIXED(loan)},
+    {plan: Plans.STANDARD_TIERED, data: RepaymentPlans.STANDARD_TIERED(loan)},
+    {plan: Plans.GRADUATED, data: RepaymentPlans.GRADUATED(loan)},
+    {plan: Plans.FIXED_EXTENDED, data: RepaymentPlans.FIXED_EXTENDED(loan)},
+    {
+      plan: Plans.GRADUATED_EXTENDED,
+      data: RepaymentPlans.GRADUATED_EXTENDED(loan),
+    },
+    {
+      plan: Plans.INCOME_BASED_REPAY,
+      data: RepaymentPlans.INCOME_BASED_REPAY(loan, income),
+    },
+    {
+      plan: Plans.INCOME_BASED_REPAY_NEW,
+      data: RepaymentPlans.INCOME_BASED_REPAY_NEW(loan, income),
+    },
+    {
+      plan: Plans.PAY_AS_YOU_EARN,
+      data: RepaymentPlans.PAY_AS_YOU_EARN(loan, income),
+    },
+    {
+      plan: Plans.REVISED_PAY_AS_YOU_EARN,
+      data: RepaymentPlans.REVISED_PAY_AS_YOU_EARN(loan, income),
+    },
+    {
+      plan: Plans.INCOME_CONTINGENT_REPAY,
+      data: RepaymentPlans.INCOME_CONTINGENT_REPAY(loan, income),
+    },
+    {plan: Plans.RAP, data: RepaymentPlans.RAP(loan, income)},
+  ].map((repayment) => ({...repayment.data, plan: repayment.plan}))
+
+  if (bBorrowAfter070126) {
+    if (hasParentPlusHistory) {
+      repayments = repayments.filter(
+        (repayment) => repayment.plan === Plans.STANDARD_TIERED
+      )
+    } else {
+      repayments = repayments.filter((repayment) =>
+        [Plans.RAP, Plans.STANDARD_TIERED].includes(repayment.plan)
+      )
+    }
+  }
+
+  if (bPSLF) {
+    repayments = repayments.map((repayment) =>
+      applyPslf(repayment, PSLF_TERMS[repayment.plan])
+    )
+  }
+
+  return repayments.filter((repayment) => repayment.breakdown.length)
+}
 
 export const consolidateLoans = (loans, income) => {
   if (loans.length === 1) {

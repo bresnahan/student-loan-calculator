@@ -7,6 +7,7 @@
  */
 
 import Button from 'react-bootstrap/Button'
+import Form from 'react-bootstrap/Form'
 import Loan from './loan'
 import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useMemo, useReducer} from 'react'
@@ -17,7 +18,14 @@ import {listReducer, useRouteConfig} from '../shared/hooks'
 
 let LOAN_ID = 1
 
-const LoanList = ({loans, income, onChange}) => {
+const LoanList = ({
+  loans,
+  income,
+  onChange,
+  bBorrowAfter070126,
+  bPSLF,
+  onPolicyChange,
+}) => {
   const [list, updateList] = useReducer(listReducer, loans)
   const onLoanChange = useCallback(
     (id, data) => updateList({type: 'update', id, data}),
@@ -72,6 +80,32 @@ const LoanList = ({loans, income, onChange}) => {
 
   const loan = useMemo(() => consolidateLoans(list, income), [list, income])
 
+  const onBorrowAfterChange = useCallback(
+    (event) => {
+      if (!onPolicyChange) {
+        return
+      }
+      onPolicyChange({
+        bBorrowAfter070126: event.target.checked,
+        bPSLF,
+      })
+    },
+    [onPolicyChange, bPSLF]
+  )
+
+  const onPslfChange = useCallback(
+    (event) => {
+      if (!onPolicyChange) {
+        return
+      }
+      onPolicyChange({
+        bBorrowAfter070126,
+        bPSLF: event.target.checked,
+      })
+    },
+    [onPolicyChange, bBorrowAfter070126]
+  )
+
   return (
     <>
       <div>
@@ -103,6 +137,36 @@ const LoanList = ({loans, income, onChange}) => {
           Add another loan
         </Button>
       </div>
+      <div className="bg-light p-3 mb-3 rounded">
+        <Form.Group className="mb-2">
+          <Form.Check
+            type="checkbox"
+            id="borrow-after-070126"
+            label="Did you borrow or consolidate on or after July 1, 2026?"
+            checked={Boolean(bBorrowAfter070126)}
+            onChange={onBorrowAfterChange}
+          />
+        </Form.Group>
+        <Form.Group className="mb-0">
+          <Form.Check
+            type="checkbox"
+            id="pslf"
+            label={
+              <span>
+                Are you pursuing Public Service Loan Forgiveness (PSLF)?{' '}
+                <a
+                  href="https://freestudentloanadvice.org/loan-forgiveness/public-service-loan-forgiveness/"
+                  target="_blank"
+                  rel="noopener noreferrer">
+                  (Help)
+                </a>
+              </span>
+            }
+            checked={Boolean(bPSLF)}
+            onChange={onPslfChange}
+          />
+        </Form.Group>
+      </div>
     </>
   )
 }
@@ -110,7 +174,10 @@ const LoanList = ({loans, income, onChange}) => {
 LoanList.propTypes = {
   onChange: PropTypes.func,
   loans: PropTypes.array,
-  income: PropTypes.object
+  income: PropTypes.object,
+  bBorrowAfter070126: PropTypes.bool,
+  bPSLF: PropTypes.bool,
+  onPolicyChange: PropTypes.func,
 }
 
 export default LoanList
