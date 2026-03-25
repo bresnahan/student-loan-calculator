@@ -57,7 +57,7 @@ const Home = () => {
   const [income, setIncome] = useReducer(incomeReducer, {
     agi: 30000,
     agi_spouse: 25000,
-    dependents: 1,
+    dependents: 0,
     state: States.ALABAMA,
     filing: 'SINGLE',
     rates: {income: 0.025, inflation: 0.0236},
@@ -174,12 +174,7 @@ const Home = () => {
                   <Nav.Link eventKey="income">Income</Nav.Link>
                 </Nav.Item>
                 <Nav.Item className={className}>
-                  <Nav.Link eventKey="settings">
-                    <SettingsImg
-                      width={19}
-                      fill={nav === 'settings' ? '#fff' : '#aaa'}
-                    />
-                  </Nav.Link>
+                  <Nav.Link eventKey="settings">Assumptions</Nav.Link>
                 </Nav.Item>
                 <Nav.Item className={className}>
                   <Nav.Link eventKey="share">
@@ -269,7 +264,7 @@ const Home = () => {
                 >
                   Federal Poverty Guideline
                 </a>{' '}
-                for your family size.
+                for your household size (dependents plus filer(s)).
               </p>
               <p>
                 <strong>Partial Financial Hardship:</strong> If your annual

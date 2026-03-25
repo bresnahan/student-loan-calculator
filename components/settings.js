@@ -18,12 +18,18 @@ const Settings = ({onChange, rates, ...props}) => {
     asFloat
   )
 
+  const toPercent = value =>
+    Number.isFinite(value) ? value / 100 : 0
+
   useEffect(() => {
     onChange({
-      income: incomeGrowth.deferred / 100,
-      inflation: inflationRate.deferred / 100
+      income: toPercent(incomeGrowth.deferred),
+      inflation: toPercent(inflationRate.deferred)
     })
   }, [incomeGrowth.deferred, inflationRate.deferred, onChange])
+
+  const displayValue = value =>
+    Number.isFinite(value) ? formatFloat(value) : ''
 
   return (
     <Form {...props}>
@@ -36,7 +42,7 @@ const Settings = ({onChange, rates, ...props}) => {
                 type="number"
                 min={0}
                 step={0.1}
-                value={formatFloat(incomeGrowth.value)}
+                value={displayValue(incomeGrowth.value)}
                 onChange={setIncomeGrowth}
               />
               <InputGroup.Append>
@@ -53,7 +59,7 @@ const Settings = ({onChange, rates, ...props}) => {
                 type="number"
                 min={0}
                 step={0.01}
-                value={formatFloat(inflationRate.value)}
+                value={displayValue(inflationRate.value)}
                 onChange={setInflationRate}
               />
               <InputGroup.Append>

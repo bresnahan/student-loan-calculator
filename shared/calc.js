@@ -233,7 +233,10 @@ export const getIncomePercentageFactor = (income, year = 0) => {
 }
 
 export const getPovertyLevel = (income, year = 0) => {
-  const {dependents, state, rates} = income
+  const {dependents = 0, state, rates, filing} = income
+  const isMarriedFiler = filing === 'MARRIED_JOINT' || filing === 'MARRIED_SEPARATE'
+  const filers = isMarriedFiler ? 2 : 1
+  const familySize = Math.max(1, dependents + filers)
   let fpl
   switch (state) {
     case States.ALASKA:
@@ -246,8 +249,11 @@ export const getPovertyLevel = (income, year = 0) => {
       fpl = FEDERAL_POVERTY_LEVEL.LOWER_48
   }
 
+  const cappedSize = Math.min(familySize, 8)
   const level =
-    dependents < 9 ? fpl[dependents] : fpl[8] + fpl[0] * (dependents - 8)
+    familySize <= 8
+      ? fpl[cappedSize]
+      : fpl[8] + fpl[0] * (familySize - 8)
 
   return level * Math.pow(1 + rates.inflation, year)
 }
@@ -281,10 +287,9 @@ export const getDiscretionaryIncome = (income, year) =>
   Math.max(0, getTotalIncome(income) - getPovertyLevel(income, year) * 1.5)
 
 const getRapDependentCount = (income) => {
-  const {dependents = 0, filing} = income
-  const filers = filing === 'SINGLE' ? 1 : 2
+  const {dependents = 0} = income
 
-  return Math.max(0, dependents - filers)
+  return Math.max(0, dependents)
 }
 
 const getRapAnnualPayment = (agi) => {

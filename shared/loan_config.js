@@ -177,8 +177,8 @@ export const RepaymentEligible = {
 }
 
 export const RepaymentRequirements = {
-  INCOME_BASED_REPAY: ['IDR', 'PFH'],
-  INCOME_BASED_REPAY_NEW: ['IDR', 'PFH'],
+  INCOME_BASED_REPAY: ['IDR'],
+  INCOME_BASED_REPAY_NEW: ['IDR'],
   INCOME_CONTINGENT_REPAY: ['IDR'],
   PAY_AS_YOU_EARN: ['IDR', 'PFH'],
   REVISED_PAY_AS_YOU_EARN: ['IDR'],
@@ -389,6 +389,7 @@ export const getRepaymentOptions = (
   income,
   {bBorrowAfter070126, bPSLF, hasParentPlusHistory} = {}
 ) => {
+  const disabledPlans = new Set([Plans.REVISED_PAY_AS_YOU_EARN])
   let repayments = [
     {plan: Plans.STANDARD_FIXED, data: RepaymentPlans.STANDARD_FIXED(loan)},
     {plan: Plans.STANDARD_TIERED, data: RepaymentPlans.STANDARD_TIERED(loan)},
@@ -439,7 +440,10 @@ export const getRepaymentOptions = (
     )
   }
 
-  return repayments.filter((repayment) => repayment.breakdown.length)
+  return repayments.filter(
+    (repayment) =>
+      !disabledPlans.has(repayment.plan) && repayment.breakdown.length
+  )
 }
 
 export const consolidateLoans = (loans, income) => {

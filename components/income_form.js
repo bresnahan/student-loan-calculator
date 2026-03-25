@@ -12,8 +12,13 @@ import InputGroup from 'react-bootstrap/InputGroup'
 import PropTypes from 'prop-types'
 import React, {useEffect} from 'react'
 import Select from './select'
-import {CommunityPropertyStates, States} from '../shared/calc'
+import {
+  CommunityPropertyStates,
+  States,
+  getDiscretionaryIncome,
+} from '../shared/calc'
 import {TaxFilingStatus} from '../shared/loan_config'
+import {currency} from '../shared/helpers'
 
 import {asInt, useDeferredOnChange, useOnChange} from '@standardlabs/react-hooks'
 
@@ -29,7 +34,9 @@ const IncomeForm = ({onChange, income, ...props}) => {
   const [filing, onChangeFiling] = useOnChange(income.filing)
 
   useEffect(() => {
-    if (agi.deferred && dependents && state && filing) {
+    const hasDependentsValue = dependents !== undefined && dependents !== null
+
+    if (agi.deferred && hasDependentsValue && state && filing) {
       onChange({
         agi: agi.deferred,
         agi_spouse: agiSpouse.deferred,
@@ -42,6 +49,38 @@ const IncomeForm = ({onChange, income, ...props}) => {
 
   const isSingle = filing === 'SINGLE'
   const isCommunityProperty = Boolean(CommunityPropertyStates[state])
+  const dependentsCount = Number(dependents) || 0
+  const dependentsLabel = `${dependentsCount} ${dependentsCount === 1 ? 'dependent' : 'dependents'}. `
+  const toNumber = (value) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  const normalizedAgi = toNumber(agi.value)
+  const normalizedSpouseAgi = toNumber(agiSpouse.value)
+  const rates = income?.rates ?? {income: 0, inflation: 0}
+  const discretionaryIncome = state
+    ? getDiscretionaryIncome({
+        agi: normalizedAgi,
+        agi_spouse: normalizedSpouseAgi,
+        dependents: dependentsCount,
+        state,
+        filing,
+        rates,
+      })
+    : null
+  const discretionaryLabel = Number.isFinite(discretionaryIncome)
+    ? `Discretionary Income is ${currency(discretionaryIncome)}. `
+    : ''
+
+  let filingHelp = ''
+  if (!isSingle) {
+    filingHelp =
+      'Certain repayment plans include spousal income when calculating monthly payments, even if filing separately.'
+    if (filing === 'MARRIED_SEPARATE' && isCommunityProperty) {
+      filingHelp +=
+        ' In Community Property states, income is 1/2 of combined income if Married Filing Separately.'
+    }
+  }
 
   return (
     <Form {...props}>
@@ -60,11 +99,11 @@ const IncomeForm = ({onChange, income, ...props}) => {
         </Col>
         <Col>
           <Form.Group>
-            <Form.Label>Family size</Form.Label>
+            <Form.Label>Dependents</Form.Label>
             <Select onChange={onChangeDependants} value={dependents}>
-              {new Array(15).fill(1).map((value, index) => (
-                <option key={index} value={index + 1}>
-                  {index + 1}
+              {Array.from({length: 21}, (_, index) => (
+                <option key={index} value={index}>
+                  {index}
                 </option>
               ))}
             </Select>
@@ -129,17 +168,13 @@ const IncomeForm = ({onChange, income, ...props}) => {
             </InputGroup>
           </Form.Group>
         </Col>
-        {!isSingle && (
-          <Col className="mt-n3 mb-2">
-            <Form.Text muted>
-              Certain repayment plans include spousal income when calculating
-              monthly payments, even if filing separately.
-              {filing === 'MARRIED_SEPARATE' && isCommunityProperty
-                ? ' In Community Property states, income is 1/2 of combined income if Married Filing Separately.'
-                : ''}
-            </Form.Text>
-          </Col>
-        )}
+        <Col className="mt-n3 mb-2">
+          <Form.Text muted>
+            {dependentsLabel}
+            {discretionaryLabel}
+            {filingHelp}
+          </Form.Text>
+        </Col>
       </Form.Row>
     </Form>
   )

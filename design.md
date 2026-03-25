@@ -41,12 +41,42 @@ If the user checks this box, then the loan is forgiven after N payments. Specifi
 
 Therefore the code needs to factor this into the computed repayment table and graph per loan type.
 
-## 6. Tests
+## 6. Dependents
+The "Income" tab has a field called "Family size".  Some loans like
+ICR include the dependent count as input.  In theory the code can 
+determine the dependent count from the tax filing status of single or filing married, but we want to make the calculator more clear in
+this regard.  Therefore , we will change "Family size" to "Dependents" and change the range from 0 to 20 in the GUI. This
+value will then be used in the "dependents" variable in the code more clearly.  For example, the RAP code can use this value 
+directly and not make any adjustments.  The ICR code can use it 
+directly. 
+
+## 7. Tests
 - Validate RAP calculations against known cases where income changes mid-plan and prior payments shorten the term.
 - Verify Standard Tiered term selection for representative balances across all tiers.
 - Confirm poverty guideline API refresh updates values and logs errors on failure.
 - Compare ICR payment outputs against the 2025 Federal Register examples.
 - Run the UI to ensure income inputs, share link, and repayment options render without warnings.
+- Crosscheck RAP calcs with:
+    https://dreambiggerfinancial.com/repayment-assistance-plan-rap-calculator/#
+
+### Test Discretionary Income Calculation
+Discretionary Income = AGI - ( 150% Poverty Level for 1 person in continental US)
+As the number of dependents increases, the poverty level increases and therefore DI goes down.
+As you change from Single to Married filing Jointly with a $0 earning spouse, the number of people goes up and the poverty level goes up, but the AGI stays the same, so DI goes down.  If you increase the spousal income, DI goes up.
+
+Put the browser in debug mode so you can see the 3 poverty tables. 
+Case 1: Single, Continental US.
+Case 2: Single, Alaska.  
+    Result: lower DI than Continental US
+Case 3: Single, Hawaii
+    Result: lower DI than Continental US
+
+Case 4: Married, Continental US.
+Case 5: Married, Alaska
+Case 6: Married, Hawaii
+
+Case 7: Married filing separately, Continental US, 1 dep.
+Result: this should be she same as Single, with 1 dep.
 
 ### Test case, ICR1: From Federal Register for ICR repayment.
 Example 1.
@@ -60,12 +90,23 @@ http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjE1MDAwLCJyYXRlIjo
 
 Student Aid Calculator: 
     confirmed ICR payment is $105, ours is $105.
-    confirmed Standard pmt is $167, ours is $167.
+    confirmed Standard Fixed pmt is $167, ours is $167.
+    Tiered Standard Fixed pmt is $167.
     note: Tiered Standard is not in the gov Student Aid calculator.
     confirmed Graduated is $95 to $286, ours same. 
-    our PAYE starts at $93, theirs $97. 
+    our PAYE starts at $93 goes up to $149, theirs $97. 
     our IBR is for 11 years, $140 - $167.  theirs is $97-$167 to 2041, 15 years.
        also note the old TISLA calc says IBR is not an option?
+    
+    New IBR calc: Discretionary Income = AGI - ( 150% Poverty Level for 1 person in continental US)
+    DI = 35118 - (1.5 * 15960)
+    DI = 35118 - 23940
+    DI = 11178
+    Then take 10% of DI and spread across 12 months for payment:
+    Payment = 11178 * 0.10 / 12 = 93.15
+    note, Studentaid.gov comes up with $97 as the starting payment. 
+    note, they also assume 3% income growth per year.
+
     
 ### Test case, ICR2: From Federal Register for ICR repayment.
 Example 2.
@@ -76,52 +117,63 @@ Paul and Jesse have a combined AGI of $99,186 and are repaying their loans joint
 
 Expected monthly payment: $267 combined.
 
-http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjEwMDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjpmYWxzZX0seyJpZCI6MSwiYmFsYW5jZSI6MTUwMDAsInJhdGUiOjAuMDYsInR5cGUiOiJESVJFQ1RfU1VCU0lESVpFRCIsInBsYW4iOiIiLCJwYXltZW50cyI6MCwiZXhwYW5kZWQiOnRydWV9XSwiaW5jb21lIjp7ImFnaSI6OTkxODYsImFnaV9zcG91c2UiOjAsImRlcGVuZGVudHMiOjIsInN0YXRlIjoiQUxBQkFNQSIsImZpbGluZyI6Ik1BUlJJRURfSk9JTlQiLCJyYXRlcyI6eyJpbmNvbWUiOjAuMDI1LCJpbmZsYXRpb24iOjAuMDIzNn19fQ==
 
+http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjEwMDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjpmYWxzZX0seyJpZCI6MSwiYmFsYW5jZSI6MTUwMDAsInJhdGUiOjAuMDYsInR5cGUiOiJESVJFQ1RfU1VCU0lESVpFRCIsInBsYW4iOiIiLCJwYXltZW50cyI6MCwiZXhwYW5kZWQiOnRydWV9XSwiaW5jb21lIjp7ImFnaSI6OTkxODYsImFnaV9zcG91c2UiOjAsImRlcGVuZGVudHMiOjAsInN0YXRlIjoiQUxBQkFNQSIsImZpbGluZyI6Ik1BUlJJRURfSk9JTlQiLCJyYXRlcyI6eyJpbmNvbWUiOjAuMDI1LCJpbmZsYXRpb24iOjAuMDIzNn19LCJwb2xpY3kiOnsiYkJvcnJvd0FmdGVyMDcwMTI2IjpmYWxzZSwiYlBTTEYiOmZhbHNlfX0=
 
 ### Test case, ICR3: From Federal Register for ICR repayment.
 Example 3.
 
 Santiago is single with no dependents and has a combined balance of $60,000 in Direct Loans that are eligible for repayment under the ICR plan. Each of Santiago's loans has an interest rate of 6 percent, and Santiago's AGI is $41,786.
 
-Expected payment per government doc: $435.60
-http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjEsImJhbGFuY2UiOjYwMDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjQxNzg2LCJhZ2lfc3BvdXNlIjowLCJkZXBlbmRlbnRzIjoxLCJzdGF0ZSI6IkFMQUJBTUEiLCJmaWxpbmciOiJTSU5HTEUiLCJyYXRlcyI6eyJpbmNvbWUiOjAsImluZmxhdGlvbiI6MC4wMDAyfX19
+Expected payment per government doc: $435.60 (what do they assume for income growth?)
+Our result: $430
+
+http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjEsImJhbGFuY2UiOjYwMDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjQxNzg2LCJhZ2lfc3BvdXNlIjowLCJkZXBlbmRlbnRzIjowLCJzdGF0ZSI6IkFMQUJBTUEiLCJmaWxpbmciOiJTSU5HTEUiLCJyYXRlcyI6eyJpbmNvbWUiOjAsImluZmxhdGlvbiI6MC4wMDAyfX0sInBvbGljeSI6eyJiQm9ycm93QWZ0ZXIwNzAxMjYiOmZhbHNlLCJiUFNMRiI6ZmFsc2V9fQ==
 
 ### Test case, ICR4: Betsy
 Loan balance $85K
 AGI $60K
 Single with 1 child
 
-$60K - $21,150(100% of poverty level for family size of two) = $38,850
+$60K - $21,640(100% of poverty level for family size of two) = $38,360
 
-$38,850 x 20% = $7770/12 = 647.50 monthly
+$38,360 x 20% = $7672/12 = 639.33 monthly
 
-Test result: $639 for 18 years.
+Test result: $639 for 18 years, assuming 0% income and inflation increase.
+
+http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjg1MDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjYwMDAwLCJhZ2lfc3BvdXNlIjoyNTAwMCwiZGVwZW5kZW50cyI6MSwic3RhdGUiOiJBTEFCQU1BIiwiZmlsaW5nIjoiU0lOR0xFIiwicmF0ZXMiOnsiaW5jb21lIjowLCJpbmZsYXRpb24iOjB9fSwicG9saWN5Ijp7ImJCb3Jyb3dBZnRlcjA3MDEyNiI6ZmFsc2UsImJQU0xGIjpmYWxzZX19
 
 ### Test case, RAP1: Betsy
 Loan balance $60K @ 6%
 Single with 1 child
+Income: ?
 
 expected MPA: $250
 Test result: $200 for 30 years, $72K total, $37,845 of forgiveness.
 
-### Test case, Old IBR1: Betsy
-$60K-$31,725 (150% of poverty level for family size of two) = $28,275
+http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjYwMDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjYwMDAwLCJhZ2lfc3BvdXNlIjoyNTAwMCwiZGVwZW5kZW50cyI6MSwic3RhdGUiOiJBTEFCQU1BIiwiZmlsaW5nIjoiU0lOR0xFIiwicmF0ZXMiOnsiaW5jb21lIjowLjAyNSwiaW5mbGF0aW9uIjowLjAyMzZ9fSwicG9saWN5Ijp7ImJCb3Jyb3dBZnRlcjA3MDEyNiI6ZmFsc2UsImJQU0xGIjpmYWxzZX19
 
-$28, 275 x 15% = $4241.25/12 = 353.43 monthly payment amount (MPA)
+### Test case, Old IBR1: Betsy
+Loan: $85000
+Dependents: 1
+Income: $60K-($21640*1.5). $32460 is 150% of poverty level for family size of two = $21640
+
+$27540 x 15% = $4131/12 = 344.25 monthly payment amount (MPA)
 
 Result: payment range: $344 - $646 over 25 years.
 
-http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjg1MDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjYwMDAwLCJhZ2lfc3BvdXNlIjoyNTAwMCwiZGVwZW5kZW50cyI6Miwic3RhdGUiOiJBTEFCQU1BIiwiZmlsaW5nIjoiU0lOR0xFIiwicmF0ZXMiOnsiaW5jb21lIjowLjAyNSwiaW5mbGF0aW9uIjowLjAyMzZ9fSwicG9saWN5Ijp7ImJCb3Jyb3dBZnRlcjA3MDEyNiI6ZmFsc2UsImJQU0xGIjpmYWxzZX19
+http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjg1MDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjYwMDAwLCJhZ2lfc3BvdXNlIjoyNTAwMCwiZGVwZW5kZW50cyI6MSwic3RhdGUiOiJBTEFCQU1BIiwiZmlsaW5nIjoiU0lOR0xFIiwicmF0ZXMiOnsiaW5jb21lIjowLjAyNSwiaW5mbGF0aW9uIjowLjAyMzZ9fSwicG9saWN5Ijp7ImJCb3Jyb3dBZnRlcjA3MDEyNiI6ZmFsc2UsImJQU0xGIjpmYWxzZX19
 
 ### Test case, New IBR1 and PAYE: Betsy
-$60K-$31,725 (150% of poverty level for family size of two) = $28,275
+Loan: $85000
+Dependents: 1
+Income: $60K-($21640*1.5). $32460 is 150% of poverty level for family size of two = $21640
 
-$28, 275 x 15% = $2827.50/12 = 235.62 monthly payment amount (MPA)
+$27540 x 15% = $4131/12 = 344.25 monthly payment amount (MPA)
 
 result: $230 - $378 over 20 years.
-http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjg1MDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjYwMDAwLCJhZ2lfc3BvdXNlIjoyNTAwMCwiZGVwZW5kZW50cyI6Miwic3RhdGUiOiJBTEFCQU1BIiwiZmlsaW5nIjoiU0lOR0xFIiwicmF0ZXMiOnsiaW5jb21lIjowLjAyNSwiaW5mbGF0aW9uIjowLjAyMzZ9fSwicG9saWN5Ijp7ImJCb3Jyb3dBZnRlcjA3MDEyNiI6ZmFsc2UsImJQU0xGIjpmYWxzZX19
 
+http://localhost:3000/?c=eyJsb2FucyI6W3siaWQiOjAsImJhbGFuY2UiOjg1MDAwLCJyYXRlIjowLjA2LCJ0eXBlIjoiRElSRUNUX1NVQlNJRElaRUQiLCJwbGFuIjoiIiwicGF5bWVudHMiOjAsImV4cGFuZGVkIjp0cnVlfV0sImluY29tZSI6eyJhZ2kiOjYwMDAwLCJhZ2lfc3BvdXNlIjowLCJkZXBlbmRlbnRzIjoxLCJzdGF0ZSI6IkFMQUJBTUEiLCJmaWxpbmciOiJTSU5HTEUiLCJyYXRlcyI6eyJpbmNvbWUiOjAuMDI1LCJpbmZsYXRpb24iOjAuMDIzNn19LCJwb2xpY3kiOnsiYkJvcnJvd0FmdGVyMDcwMTI2IjpmYWxzZSwiYlBTTEYiOmZhbHNlfX0=
 
 
 Dept of Ed Calc result: See above

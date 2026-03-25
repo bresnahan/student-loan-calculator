@@ -9,7 +9,7 @@ import {useOnChange, asInt} from '@standardlabs/react-hooks'
 
 const DiscretionaryIncome = props => {
   const [income, onChangeIncome] = useOnChange(50000, asInt)
-  const [dependents, onChangeDependants] = useOnChange(1, asInt)
+  const [dependents, onChangeDependants] = useOnChange(0, asInt)
   const [state, onChangeState] = useOnChange(States.LOWER_48)
 
   const total =
@@ -45,14 +45,14 @@ const DiscretionaryIncome = props => {
         <Row>
           <Col>
             <Form.Group>
-              <Form.Label>Family Size</Form.Label>
+              <Form.Label>Dependents</Form.Label>
               <Form.Control
                 as="select"
                 onChange={onChangeDependants}
                 value={dependents}>
-                {new Array(15).fill(1).map((value, index) => (
-                  <option key={index} value={index + 1}>
-                    {index + 1}
+                {Array.from({length: 21}, (_, index) => (
+                  <option key={index} value={index}>
+                    {index}
                   </option>
                 ))}
               </Form.Control>
