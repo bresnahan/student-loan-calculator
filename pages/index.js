@@ -19,9 +19,6 @@ import Row from 'react-bootstrap/Row'
 import Settings from '../components/settings'
 import Share from '../components/share'
 // SVGs served from public/images to avoid inline defaultProps warnings
-const SettingsImg = props => (
-  <img alt="Settings" src="/images/cog.svg" {...props} />
-)
 const ShareImg = props => <img alt="Share" src="/images/share.svg" {...props} />
 const WrenchImg = props => (
   <img alt="Wrench" src="/images/wrench.svg" {...props} />

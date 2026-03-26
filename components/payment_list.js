@@ -169,7 +169,7 @@ const Tile = ({payment, versus, compare, expanded, ...rest}) => {
                     b={first.payment}
                     className={className}
                   />
-                  {first.payment === last.payment || isRapPlan
+                  {first.payment === last.payment
                     ? currency(first.payment)
                     : `${currency(first.payment)} - ${currency(last.payment)}`}
                 </h5>
