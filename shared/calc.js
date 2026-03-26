@@ -364,7 +364,8 @@ export const getLoanTerm = (loan) => {
     ![
       'DIRECT_CONSOLIDATED_SUBSIDIZED',
       'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
-      'DIRECT_PLUS_CONSOLIDATED',
+      'DIRECT_PLUS_CONSOLIDATED_PARENT',
+      'DIRECT_PLUS_CONSOLIDATED_NO_PARENT',
       'FFEL_CONSOLIDATED',
     ].includes(type)
   ) {

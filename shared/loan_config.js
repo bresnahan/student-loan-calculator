@@ -30,9 +30,37 @@ export const LoanTypes = {
   FFEL_PARENTS: 'FFEL PLUS Loan for Parents',
   DIRECT_PLUS_PRO: 'Direct PLUS Loan for Graduate/Professional Students',
   DIRECT_PLUS_PARENTS: 'Direct PLUS Loan for Parents',
-  DIRECT_PLUS_CONSOLIDATED: 'Direct PLUS Consolidation Loan',
+  DIRECT_PLUS_CONSOLIDATED_PARENT:
+    'Direct PLUS Consolidation Loan containing Parent PLUS',
+  DIRECT_PLUS_CONSOLIDATED_NO_PARENT:
+    'Direct PLUS Consolidation Loan not containing Parent PLUS',
   FEDERAL_PERKINS: 'Federal Perkins Loan',
   PRIVATE: 'Private Loan',
+}
+
+const DIRECT_PLUS_CONSOLIDATION_TYPES = [
+  'DIRECT_PLUS_CONSOLIDATED_PARENT',
+  'DIRECT_PLUS_CONSOLIDATED_NO_PARENT',
+]
+
+const isParentPlusConsolidationLoan = (loan) =>
+  loan?.type === 'DIRECT_PLUS_CONSOLIDATED_PARENT'
+
+const PARENT_PLUS_ALLOWED_PLANS = new Set([
+  'STANDARD_FIXED',
+  'STANDARD_TIERED',
+  'GRADUATED',
+  'INCOME_BASED_REPAY',
+  'INCOME_BASED_REPAY_NEW',
+  'INCOME_CONTINGENT_REPAY',
+])
+
+const restrictParentPlusEligibility = (planKey, fn) => (loan, ...rest) => {
+  if (isParentPlusConsolidationLoan(loan) && !PARENT_PLUS_ALLOWED_PLANS.has(planKey)) {
+    return false
+  }
+
+  return fn(loan, ...rest)
 }
 
 export const TaxFilingStatus = {
@@ -70,9 +98,9 @@ const Plans = {
 }
 
 export const RepaymentEligible = {
-  STANDARD_FIXED: () => true,
-  STANDARD_TIERED: () => true,
-  FIXED_EXTENDED: (loan) =>
+  STANDARD_FIXED: restrictParentPlusEligibility('STANDARD_FIXED', () => true),
+  STANDARD_TIERED: restrictParentPlusEligibility('STANDARD_TIERED', () => true),
+  FIXED_EXTENDED: restrictParentPlusEligibility('FIXED_EXTENDED', (loan) =>
     loan.balance > 30000 &&
     [
       'DIRECT_SUBSIDIZED',
@@ -81,14 +109,15 @@ export const RepaymentEligible = {
       'STAFFORD_UNSUBSIDIZED',
       'DIRECT_PLUS_PRO',
       'DIRECT_PLUS_PARENTS',
-      'DIRECT_PLUS_CONSOLIDATED',
+      ...DIRECT_PLUS_CONSOLIDATION_TYPES,
       'DIRECT_CONSOLIDATED_SUBSIDIZED',
       'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
       'FFEL_CONSOLIDATED',
       'FFEL_PRO',
       'FFEL_PARENTS',
-    ].includes(loan.type),
-  GRADUATED: (loan) =>
+    ].includes(loan.type)
+  ),
+  GRADUATED: restrictParentPlusEligibility('GRADUATED', (loan) =>
     [
       'DIRECT_SUBSIDIZED',
       'DIRECT_UNSUBSIDIZED',
@@ -96,84 +125,113 @@ export const RepaymentEligible = {
       'DIRECT_PLUS_PARENTS',
       'DIRECT_CONSOLIDATED_SUBSIDIZED',
       'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
-      'DIRECT_PLUS_CONSOLIDATED',
+      ...DIRECT_PLUS_CONSOLIDATION_TYPES,
       'STAFFORD_SUBSIDIZED',
       'STAFFORD_UNSUBSIDIZED',
       'FFEL_CONSOLIDATED',
       'FFEL_PRO',
       'FFEL_PARENTS',
-    ].includes(loan.type),
-  GRADUATED_EXTENDED: (loan) =>
-    loan.balance > 30000 &&
+    ].includes(loan.type)
+  ),
+  GRADUATED_EXTENDED: restrictParentPlusEligibility(
+    'GRADUATED_EXTENDED',
+    (loan) =>
+      loan.balance > 30000 &&
+      [
+        'DIRECT_SUBSIDIZED',
+        'DIRECT_UNSUBSIDIZED',
+        'STAFFORD_SUBSIDIZED',
+        'STAFFORD_UNSUBSIDIZED',
+        'DIRECT_PLUS_PRO',
+        'DIRECT_PLUS_PARENTS',
+        ...DIRECT_PLUS_CONSOLIDATION_TYPES,
+        'DIRECT_CONSOLIDATED_SUBSIDIZED',
+        'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
+        'FFEL_CONSOLIDATED',
+        'FFEL_PRO',
+        'FFEL_PARENTS',
+      ].includes(loan.type)
+  ),
+  INCOME_BASED_REPAY: restrictParentPlusEligibility(
+    'INCOME_BASED_REPAY',
+    (loan, income) =>
+      partialFinancialHardship(loan, income, 0.15) &&
+      [
+        'DIRECT_SUBSIDIZED',
+        'DIRECT_UNSUBSIDIZED',
+        'STAFFORD_SUBSIDIZED',
+        'STAFFORD_UNSUBSIDIZED',
+        'FFEL_PRO',
+        'FFEL_CONSOLIDATED',
+        'DIRECT_PLUS_PRO',
+        'DIRECT_CONSOLIDATED_SUBSIDIZED',
+        'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
+      ].includes(loan.type)
+  ),
+  INCOME_BASED_REPAY_NEW: restrictParentPlusEligibility(
+    'INCOME_BASED_REPAY_NEW',
+    (loan, income) =>
+      partialFinancialHardship(loan, income, 0.15) &&
+      [
+        'DIRECT_SUBSIDIZED',
+        'DIRECT_UNSUBSIDIZED',
+        'DIRECT_CONSOLIDATED_SUBSIDIZED',
+        'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
+        'DIRECT_PLUS_PRO',
+        'DIRECT_PLUS_CONSOLIDATED_PARENT',
+        'DIRECT_PLUS_CONSOLIDATED_NO_PARENT',
+      ].includes(loan.type)
+  ),
+  PAY_AS_YOU_EARN: restrictParentPlusEligibility(
+    'PAY_AS_YOU_EARN',
+    (loan, income) =>
+      partialFinancialHardship(loan, income, 0.1) &&
+      [
+        'DIRECT_SUBSIDIZED',
+        'DIRECT_UNSUBSIDIZED',
+        'DIRECT_CONSOLIDATED_SUBSIDIZED',
+        'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
+        'DIRECT_PLUS_PRO',
+        'DIRECT_PLUS_CONSOLIDATED_PARENT',
+        'DIRECT_PLUS_CONSOLIDATED_NO_PARENT',
+      ].includes(loan.type)
+  ),
+  REVISED_PAY_AS_YOU_EARN: restrictParentPlusEligibility(
+    'REVISED_PAY_AS_YOU_EARN',
+    (loan) =>
+      [
+        'DIRECT_SUBSIDIZED',
+        'DIRECT_UNSUBSIDIZED',
+        'DIRECT_CONSOLIDATED_SUBSIDIZED',
+        'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
+        'DIRECT_PLUS_PRO',
+        'DIRECT_PLUS_CONSOLIDATED_PARENT',
+        'DIRECT_PLUS_CONSOLIDATED_NO_PARENT',
+      ].includes(loan.type)
+  ),
+  INCOME_CONTINGENT_REPAY: restrictParentPlusEligibility(
+    'INCOME_CONTINGENT_REPAY',
+    (loan) =>
+      [
+        'DIRECT_SUBSIDIZED',
+        'DIRECT_UNSUBSIDIZED',
+        'DIRECT_CONSOLIDATED_SUBSIDIZED',
+        'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
+        'DIRECT_PLUS_PRO',
+        'DIRECT_PLUS_CONSOLIDATED_PARENT',
+        'DIRECT_PLUS_CONSOLIDATED_NO_PARENT',
+      ].includes(loan.type)
+  ),
+  RAP: restrictParentPlusEligibility('RAP', (loan) =>
     [
       'DIRECT_SUBSIDIZED',
       'DIRECT_UNSUBSIDIZED',
-      'STAFFORD_SUBSIDIZED',
-      'STAFFORD_UNSUBSIDIZED',
-      'DIRECT_PLUS_PRO',
-      'DIRECT_PLUS_PARENTS',
-      'DIRECT_PLUS_CONSOLIDATED',
-      'DIRECT_CONSOLIDATED_SUBSIDIZED',
-      'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
-      'FFEL_CONSOLIDATED',
-      'FFEL_PRO',
-      'FFEL_PARENTS',
-    ].includes(loan.type),
-  INCOME_BASED_REPAY: (loan, income) =>
-    partialFinancialHardship(loan, income, 0.15) &&
-    [
-      'DIRECT_SUBSIDIZED',
-      'DIRECT_UNSUBSIDIZED',
-      'STAFFORD_SUBSIDIZED',
-      'STAFFORD_UNSUBSIDIZED',
-      'FFEL_PRO',
-      'FFEL_CONSOLIDATED',
-      'DIRECT_PLUS_PRO',
-      'DIRECT_CONSOLIDATED_SUBSIDIZED',
-      'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
-    ].includes(loan.type),
-  INCOME_BASED_REPAY_NEW: (loan, income) =>
-    partialFinancialHardship(loan, income, 0.15) &&
-    [
-      'DIRECT_SUBSIDIZED',
-      'DIRECT_UNSUBSIDIZED',
       'DIRECT_CONSOLIDATED_SUBSIDIZED',
       'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
       'DIRECT_PLUS_PRO',
-    ].includes(loan.type),
-  PAY_AS_YOU_EARN: (loan, income) =>
-    partialFinancialHardship(loan, income, 0.1) &&
-    [
-      'DIRECT_SUBSIDIZED',
-      'DIRECT_UNSUBSIDIZED',
-      'DIRECT_CONSOLIDATED_SUBSIDIZED',
-      'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
-      'DIRECT_PLUS_PRO',
-    ].includes(loan.type),
-  REVISED_PAY_AS_YOU_EARN: (loan) =>
-    [
-      'DIRECT_SUBSIDIZED',
-      'DIRECT_UNSUBSIDIZED',
-      'DIRECT_CONSOLIDATED_SUBSIDIZED',
-      'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
-      'DIRECT_PLUS_PRO',
-    ].includes(loan.type),
-  INCOME_CONTINGENT_REPAY: (loan) =>
-    [
-      'DIRECT_SUBSIDIZED',
-      'DIRECT_UNSUBSIDIZED',
-      'DIRECT_CONSOLIDATED_SUBSIDIZED',
-      'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
-      'DIRECT_PLUS_PRO',
-    ].includes(loan.type),
-  RAP: (loan) =>
-    [
-      'DIRECT_SUBSIDIZED',
-      'DIRECT_UNSUBSIDIZED',
-      'DIRECT_CONSOLIDATED_SUBSIDIZED',
-      'DIRECT_CONSOLIDATED_UNSUBSIDIZED',
-      'DIRECT_PLUS_PRO',
-    ].includes(loan.type),
+      'DIRECT_PLUS_CONSOLIDATED_NO_PARENT',
+    ].includes(loan.type)
+  ),
 }
 
 export const RepaymentRequirements = {

@@ -50,7 +50,18 @@ value will then be used in the "dependents" variable in the code more clearly.  
 directly and not make any adjustments.  The ICR code can use it 
 directly. 
 
-## 7. Tests
+## 7.  Direct Plus Consolidation Loan type updates
+For the direct plus consolidation loan type , we should have two options in the "What kind of loan do you have?" dropdown:
+1) for a consolidation loan that contains Parent plus loan(s)
+Title this "Direct Plus Consolidation Loan containing Parent Plus"
+2) one that doesn’t contain parent plus loan(s)
+Title this "Direct Plus Consolidation Loan not containing Parent Plus"
+
+In option 1, available loan types are Standard Fixed, Standard Tiered, Graduates, Income-Contingent Repayment (ICR) and Income-Based Repayment (IBR), but RAP is not.
+In option 2, available loan types are same as option 1 but also includes RAP as an option. 
+
+
+## 8 Tests
 - Validate RAP calculations against known cases where income changes mid-plan and prior payments shorten the term.
 - Verify Standard Tiered term selection for representative balances across all tiers.
 - Confirm poverty guideline API refresh updates values and logs errors on failure.
