@@ -115,7 +115,7 @@ const IncomeForm = ({onChange, income, ...props}) => {
       <Form.Row>
         <Col>
           <Form.Group>
-            <Form.Label>State</Form.Label>
+            <Form.Label>State / Territory</Form.Label>
             <Select onChange={onChangeState} value={state}>
               {Object.entries(States).map(([key, value]) => {
                 const label = value.replace(/_/g, ' ')

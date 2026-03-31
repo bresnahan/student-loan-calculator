@@ -138,13 +138,16 @@ const Tile = ({payment, versus, compare, expanded, ...rest}) => {
   }, [description, checkMoreText, textExpanded])
 
   if (!eligible) {
+    const baseMessage = 'Your loan is not elgible for this repayment plan.'
+    const rejectionMessage = label?.includes('PAYE')
+      ? `${baseMessage} Not eligible due to the size of your income versus your loan balance.`
+      : baseMessage
+
     return (
       <div className="bg-light p-1">
         <div className="card-body p-2">
           <h6 className="card-title mt-2 font-weight-bold">{label}</h6>
-          <div className="card-text">
-            Your loan is not elgible for this repayment plan
-          </div>
+          <div className="card-text">{rejectionMessage}</div>
         </div>
       </div>
     )

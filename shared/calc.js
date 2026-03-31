@@ -56,6 +56,7 @@ export const States = {
   WEST_VIRGINIA: 'WEST_VIRGINIA',
   WISCONSIN: 'WISCONSIN',
   WYOMING: 'WYOMING',
+  ELIGIBLE_TERRITORIES: 'ELIGIBLE TERRITORIES (e.g. Guam)',
 }
 
 export const CommunityPropertyStates = {
@@ -244,6 +245,9 @@ export const getPovertyLevel = (income, year = 0) => {
       break
     case States.HAWAII:
       fpl = FEDERAL_POVERTY_LEVEL.HAWAII
+      break
+    case States.ELIGIBLE_TERRITORIES:
+      fpl = FEDERAL_POVERTY_LEVEL.LOWER_48
       break
     default:
       fpl = FEDERAL_POVERTY_LEVEL.LOWER_48

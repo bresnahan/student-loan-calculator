@@ -64,7 +64,11 @@ const PaymentSummary = props => {
           </td>
         </>
       ) : (
-        <td colSpan="5">Your loan is not elgible for this repayment plan</td>
+        <td colSpan="5">
+          {label?.includes('PAYE')
+            ? 'Your loan is not elgible for this repayment plan due to the size of your income versus your loan balance.'
+            : 'Your loan is not elgible for this repayment plan.'}
+        </td>
       )}
       <style jsx>{`
         div.rounded-circle {
