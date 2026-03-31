@@ -154,8 +154,7 @@ export const RepaymentEligible = {
   ),
   INCOME_BASED_REPAY: restrictParentPlusEligibility(
     'INCOME_BASED_REPAY',
-    (loan, income) =>
-      partialFinancialHardship(loan, income, 0.15) &&
+    (loan) =>
       [
         'DIRECT_SUBSIDIZED',
         'DIRECT_UNSUBSIDIZED',
@@ -170,8 +169,7 @@ export const RepaymentEligible = {
   ),
   INCOME_BASED_REPAY_NEW: restrictParentPlusEligibility(
     'INCOME_BASED_REPAY_NEW',
-    (loan, income) =>
-      partialFinancialHardship(loan, income, 0.15) &&
+    (loan) =>
       [
         'DIRECT_SUBSIDIZED',
         'DIRECT_UNSUBSIDIZED',

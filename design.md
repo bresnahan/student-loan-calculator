@@ -60,8 +60,13 @@ Title this "Direct Plus Consolidation Loan not containing Parent Plus"
 In option 1, available loan types are Standard Fixed, Standard Tiered, Graduates, Income-Contingent Repayment (ICR) and Income-Based Repayment (IBR), but RAP is not.
 In option 2, available loan types are same as option 1 but also includes RAP as an option. 
 
+## 8. Partial Financial Hardship (PFH)changes
+Congress has changed the rules for applying PFH. It no
+longer is used for either IBR loan type but is used for calculating payment for PAYE.  This means that you can
+apply for an IBR loan without having to prove PFH.
+partialFinancialHardship() is used in the code to check for PFH.
 
-## 8 Tests
+## 9 Tests
 - Validate RAP calculations against known cases where income changes mid-plan and prior payments shorten the term.
 - Verify Standard Tiered term selection for representative balances across all tiers.
 - Confirm poverty guideline API refresh updates values and logs errors on failure.
