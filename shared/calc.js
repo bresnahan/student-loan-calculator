@@ -472,7 +472,6 @@ export const rapBasedRepayment = (loan, income, term = 30) => {
     const interest = (last.endingBalance * rate) / MONTHS
     const cappedPayment = Math.min(payment, last.endingBalance + interest)
     const principalPaid = Math.max(0, cappedPayment - interest)
-    const interestForgiven = Math.max(0, interest - cappedPayment)
     let principalSubsidy = Math.max(0, 50 - principalPaid)
     let totalReduction = principalPaid + principalSubsidy
 
@@ -484,9 +483,8 @@ export const rapBasedRepayment = (loan, income, term = 30) => {
     const endingBalance = last.endingBalance - totalReduction
     const totalInterest = interest + last.totalInterest
     const totalPayment = cappedPayment + last.totalPayment
-    const governmentForgiveness = interestForgiven + principalSubsidy
-    const totalGovernmentForgiveness =
-      governmentForgiveness + last.totalGovernmentForgiveness
+    const governmentForgiveness = 0
+    const totalGovernmentForgiveness = last.totalGovernmentForgiveness
 
     breakdown.push({
       balance: last.endingBalance,
@@ -502,6 +500,17 @@ export const rapBasedRepayment = (loan, income, term = 30) => {
 
     if (endingBalance <= 0) {
       break
+    }
+  }
+
+  if (breakdown.length) {
+    const finalEntry = breakdown[breakdown.length - 1]
+    const forgivenBalance = Math.max(0, finalEntry.endingBalance)
+
+    if (forgivenBalance > 0) {
+      finalEntry.governmentForgiveness = forgivenBalance
+      finalEntry.totalGovernmentForgiveness =
+        (finalEntry.totalGovernmentForgiveness || 0) + forgivenBalance
     }
   }
 

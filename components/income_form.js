@@ -22,6 +22,8 @@ import {currency} from '../shared/helpers'
 
 import {asInt, useDeferredOnChange, useOnChange} from '@standardlabs/react-hooks'
 
+const bDebug = false
+
 const IncomeForm = ({onChange, income, ...props}) => {
   const [agi, onChangeAgi] = useDeferredOnChange(income.agi, 150, asInt)
   const [agiSpouse, onChangeAgiSpouse] = useDeferredOnChange(
@@ -170,8 +172,12 @@ const IncomeForm = ({onChange, income, ...props}) => {
         </Col>
         <Col className="mt-n3 mb-2">
           <Form.Text muted>
-            {dependentsLabel}
-            {discretionaryLabel}
+            {bDebug && (
+              <>
+                {dependentsLabel}
+                {discretionaryLabel}
+              </>
+            )}
             {filingHelp}
           </Form.Text>
         </Col>
