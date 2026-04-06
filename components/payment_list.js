@@ -19,6 +19,7 @@ import ToggleButton from 'react-bootstrap/ToggleButton'
 import ToggleButtonGroup from 'react-bootstrap/ToggleButtonGroup'
 import css from 'styled-jsx/css'
 import {currency, simplifyCurrency} from '../shared/helpers'
+import {trackRepaymentSelection} from '../shared/analytics'
 
 const AlignImg = props => <img alt="Align" src="/images/align-left.svg" {...props} />
 const BadgeImg = props => (
@@ -287,8 +288,17 @@ const PaymentList = ({payments}) => {
   const eligible = payments.filter(p => p.eligible)
   const [selected, setSelected] = useState(eligible[0])
   const onSelect = useCallback(
-    label => setSelected(payments.find(r => r.label === label)),
-    [payments, setSelected]
+    label => {
+      const next = payments.find(r => r.label === label)
+
+      if (!next) {
+        return
+      }
+
+      setSelected(next)
+      trackRepaymentSelection(next.label, {plan: next.plan})
+    },
+    [payments]
   )
 
   const [compare, setCompare] = useState('payment')
