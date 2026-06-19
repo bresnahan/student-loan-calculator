@@ -457,7 +457,9 @@ export const incomeBasedRepayment = (
 export const rapBasedRepayment = (loan, income, term = 30) => {
   term = proRatedTerm(loan, term, true)
   const {balance, rate} = loan
-  const payment = getRapMonthlyPayment(income)
+  let {rates} = income
+  let agi = getTotalIncome(income)
+  let payment = getRapMonthlyPayment(income)
   const breakdown = []
 
   for (let i = 0; i < term * MONTHS; i++) {
@@ -471,6 +473,12 @@ export const rapBasedRepayment = (loan, income, term = 30) => {
         totalPayment: 0,
         totalGovernmentForgiveness: 0,
       }
+    }
+
+    // Increase payment every year based on income growth rate
+    if (i > 0 && i % MONTHS === 0) {
+      agi = agi * (1 + rates.income)
+      payment = getRapMonthlyPayment({...income, agi})
     }
 
     const interest = (last.endingBalance * rate) / MONTHS
